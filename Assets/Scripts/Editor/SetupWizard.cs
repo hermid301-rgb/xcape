@@ -83,6 +83,10 @@ namespace XCAPE.Editor
             {
                 AddLobbyPanelToCurrentScene();
             }
+            if (GUILayout.Button("Add UGS Verification Banner to Current Scene"))
+            {
+                AddUGSBannerToCurrentScene();
+            }
             if (GUILayout.Button("Switch Platform to Android"))
             {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
@@ -679,6 +683,19 @@ namespace XCAPE.Editor
             // Titulo
             var title = CreateText(canvasGO.transform, "XCAPE Bowling", 36, new Vector2(0.5f, 0.8f));
 
+            // Banner de verificación UGS (arriba de la pantalla)
+            var bannerGO = new GameObject("UGS_Banner");
+            bannerGO.transform.SetParent(canvasGO.transform, false);
+            var bannerImg = bannerGO.AddComponent<UnityEngine.UI.Image>();
+            bannerImg.color = new Color(1f, 0.65f, 0.1f, 0.8f); // naranja translúcido
+            var brt = bannerImg.rectTransform; brt.anchorMin = new Vector2(0f, 0.92f); brt.anchorMax = new Vector2(1f, 1f); brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+            var bannerText = CreateText(bannerGO.transform, "Proyecto no vinculado a UGS.", 14, new Vector2(0.5f, 0.5f));
+            bannerText.rectTransform.sizeDelta = new Vector2(1200, 40);
+            var banner = bannerGO.AddComponent<XCAPE.UI.UGSVerificationBanner>();
+            var soBanner = new SerializedObject(banner);
+            soBanner.FindProperty("messageText").objectReferenceValue = bannerText;
+            soBanner.ApplyModifiedPropertiesWithoutUndo();
+
             // Botones
             var playBtn = CreateButton(canvasGO.transform, "Play", new Vector2(0.5f, 0.6f));
             var settingsBtn = CreateButton(canvasGO.transform, "Settings", new Vector2(0.5f, 0.5f));
@@ -828,6 +845,54 @@ namespace XCAPE.Editor
             }
             BuildLobbyPanel(canvas.transform);
             EditorUtility.DisplayDialog("XCAPE", "Lobby Panel added to current scene.", "OK");
+        }
+
+        private void AddUGSBannerToCurrentScene()
+        {
+            var active = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            if (!active.IsValid())
+            {
+                EditorUtility.DisplayDialog("XCAPE", "No active scene found.", "OK");
+                return;
+            }
+            // Evitar duplicados
+            var existing = GameObject.Find("UGS_Banner");
+            if (existing != null)
+            {
+                EditorUtility.DisplayDialog("XCAPE", "UGS Banner ya existe en la escena.", "OK");
+                return;
+            }
+
+            var canvas = Object.FindObjectOfType<UnityEngine.Canvas>();
+            if (canvas == null)
+            {
+                var canvasGO = new GameObject("Canvas");
+                canvas = canvasGO.AddComponent<UnityEngine.Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                if (!Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>())
+                {
+                    var es = new GameObject("EventSystem");
+                    es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                    es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
+            }
+
+            var bannerGO = new GameObject("UGS_Banner");
+            bannerGO.transform.SetParent(canvas.transform, false);
+            var bannerImg = bannerGO.AddComponent<UnityEngine.UI.Image>();
+            bannerImg.color = new Color(1f, 0.65f, 0.1f, 0.8f);
+            var brt = bannerImg.rectTransform; brt.anchorMin = new Vector2(0f, 0.92f); brt.anchorMax = new Vector2(1f, 1f); brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+            var bannerText = CreateText(bannerGO.transform, "Proyecto no vinculado a UGS.", 14, new Vector2(0.5f, 0.5f));
+            bannerText.rectTransform.sizeDelta = new Vector2(1200, 40);
+
+            var banner = bannerGO.AddComponent<XCAPE.UI.UGSVerificationBanner>();
+            var soBanner = new SerializedObject(banner);
+            soBanner.FindProperty("messageText").objectReferenceValue = bannerText;
+            soBanner.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorUtility.DisplayDialog("XCAPE", "UGS Verification Banner added to current scene.", "OK");
         }
 
     private void OpenServicesSettings()
