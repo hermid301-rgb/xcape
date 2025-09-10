@@ -102,15 +102,15 @@ namespace XCAPE.Gameplay
             }
             
             // Crear material físico si no existe
-            if (!pinPhysicMaterial)
+        if (!pinPhysicMaterial)
             {
                 pinPhysicMaterial = new PhysicMaterial("PinMaterial")
                 {
-                    dynamicFriction = 0.4f,
-                    staticFriction = 0.6f,
-                    bounciness = 0.1f,
-                    frictionCombine = PhysicMaterialCombine.Average,
-                    bounceCombine = PhysicMaterialCombine.Minimum
+            dynamicFriction = 0.3f,
+            staticFriction = 0.4f,
+            bounciness = 0.02f,
+            frictionCombine = PhysicMaterialCombine.Minimum,
+            bounceCombine = PhysicMaterialCombine.Minimum
                 };
             }
         }
@@ -459,7 +459,10 @@ namespace XCAPE.Gameplay
             // Mostrar número del pino
             if (pinNumber > 0)
             {
+                
+#if UNITY_EDITOR
                 UnityEditor.Handles.Label(transform.position + Vector3.up * pinHeight, $"Pin {pinNumber}");
+#endif
             }
         }
         #endregion

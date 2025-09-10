@@ -46,6 +46,11 @@ namespace XCAPE.Editor
                 CreateWiredGameplayScene();
                 SetupBuildSettings();
             }
+            if (GUILayout.Button("Apply Physics & Materials Tuning"))
+            {
+                CreateOrUpdatePhysicMaterials();
+                ApplyTuningToCurrentScene();
+            }
             if (GUILayout.Button("Switch Platform to Android"))
             {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
@@ -169,6 +174,7 @@ namespace XCAPE.Editor
         private void CreateWiredGameplayScene()
         {
             EnsureTags(new[] { "Lane", "Gutter", "Pin", "PinArea", "Ball" });
+            CreateOrUpdatePhysicMaterials();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             scene.name = "GamePlay";
@@ -187,6 +193,7 @@ namespace XCAPE.Editor
             lane.tag = "Lane";
             var laneCol = lane.GetComponent<BoxCollider>();
             laneCol.isTrigger = false;
+            AssignPhysicMaterial(laneCol, "XCAPE_Lane_Physmat");
 
             // Gutters (triggers)
             var leftGutter = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -196,6 +203,7 @@ namespace XCAPE.Editor
             leftGutter.transform.localScale = new Vector3(0.3f, 0.2f, 18f);
             leftGutter.tag = "Gutter";
             var lgc = leftGutter.GetComponent<BoxCollider>(); lgc.isTrigger = true;
+            AssignPhysicMaterial(lgc, "XCAPE_Gutter_Physmat");
 
             var rightGutter = GameObject.CreatePrimitive(PrimitiveType.Cube);
             rightGutter.name = "Gutter_Right";
@@ -204,6 +212,7 @@ namespace XCAPE.Editor
             rightGutter.transform.localScale = new Vector3(0.3f, 0.2f, 18f);
             rightGutter.tag = "Gutter";
             var rgc = rightGutter.GetComponent<BoxCollider>(); rgc.isTrigger = true;
+            AssignPhysicMaterial(rgc, "XCAPE_Gutter_Physmat");
 
             // Pin Area (trigger near end)
             var pinArea = new GameObject("PinArea");
@@ -262,6 +271,9 @@ namespace XCAPE.Editor
             ballInstance.transform.position = spawn.position;
             ballInstance.transform.parent = root.transform;
             var ballCtrl = ballInstance.GetComponent<XCAPE.Gameplay.BallController>();
+            // Assign ball physic material
+            var ballCol = ballInstance.GetComponent<SphereCollider>();
+            AssignPhysicMaterial(ballCol, "XCAPE_Ball_Physmat");
 
             // LaneController
             var laneCtrlGO = new GameObject("LaneController");
@@ -325,6 +337,7 @@ namespace XCAPE.Editor
             go.tag = "Pin";
             col.height = 0.381f; col.radius = 0.06f; col.center = new Vector3(0, col.height * 0.5f, 0);
             rb.mass = 1.59f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            AssignPhysicMaterial(col, "XCAPE_Pin_Physmat");
             var path = "Assets/Prefabs/Gameplay/Pin.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             GameObject.DestroyImmediate(go);
@@ -346,10 +359,79 @@ namespace XCAPE.Editor
             // Trail
             var tr = go.AddComponent<TrailRenderer>();
             tr.time = 0.3f; tr.startWidth = 0.05f; tr.endWidth = 0.01f; tr.emitting = false;
+            AssignPhysicMaterial(sc, "XCAPE_Ball_Physmat");
             var path = "Assets/Prefabs/Gameplay/Ball.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             GameObject.DestroyImmediate(go);
             return prefab;
+        }
+
+        // ===== Physic Materials creation & tuning =====
+        private void CreateOrUpdatePhysicMaterials()
+        {
+            Directory.CreateDirectory("Assets/Materials/Physics");
+            CreateOrUpdatePhysicMaterial("Assets/Materials/Physics/XCAPE_Ball_Physmat.physicMaterial", 0.08f, 0.06f, 0.02f, PhysicMaterialCombine.Minimum, PhysicMaterialCombine.Minimum);
+            CreateOrUpdatePhysicMaterial("Assets/Materials/Physics/XCAPE_Lane_Physmat.physicMaterial", 0.01f, 0.01f, 0.0f, PhysicMaterialCombine.Minimum, PhysicMaterialCombine.Minimum);
+            CreateOrUpdatePhysicMaterial("Assets/Materials/Physics/XCAPE_Gutter_Physmat.physicMaterial", 0.6f, 0.7f, 0.0f, PhysicMaterialCombine.Maximum, PhysicMaterialCombine.Minimum);
+            CreateOrUpdatePhysicMaterial("Assets/Materials/Physics/XCAPE_Pin_Physmat.physicMaterial", 0.4f, 0.3f, 0.02f, PhysicMaterialCombine.Minimum, PhysicMaterialCombine.Minimum);
+            AssetDatabase.SaveAssets();
+        }
+
+        private void CreateOrUpdatePhysicMaterial(string path, float staticFriction, float dynamicFriction, float bounciness, PhysicMaterialCombine frictionCombine, PhysicMaterialCombine bounceCombine)
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<PhysicMaterial>(path);
+            if (!mat)
+            {
+                mat = new PhysicMaterial(Path.GetFileNameWithoutExtension(path));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.staticFriction = staticFriction;
+            mat.dynamicFriction = dynamicFriction;
+            mat.bounciness = bounciness;
+            mat.frictionCombine = frictionCombine;
+            mat.bounceCombine = bounceCombine;
+            EditorUtility.SetDirty(mat);
+        }
+
+        private void AssignPhysicMaterial(Collider col, string matName)
+        {
+            var guids = AssetDatabase.FindAssets($"{matName} t:PhysicMaterial");
+            if (guids != null && guids.Length > 0)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                var mat = AssetDatabase.LoadAssetAtPath<PhysicMaterial>(path);
+                if (mat) col.sharedMaterial = mat;
+            }
+        }
+
+        private void ApplyTuningToCurrentScene()
+        {
+            // Asigna materiales físicos y ajusta algunos parámetros en la escena activa
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid()) { EditorUtility.DisplayDialog("XCAPE", "No hay escena activa válida.", "OK"); return; }
+
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var col in root.GetComponentsInChildren<Collider>(true))
+                {
+                    if (col.CompareTag("Lane")) AssignPhysicMaterial(col, "XCAPE_Lane_Physmat");
+                    else if (col.CompareTag("Gutter")) AssignPhysicMaterial(col, "XCAPE_Gutter_Physmat");
+                    else if (col.CompareTag("Pin")) AssignPhysicMaterial(col, "XCAPE_Pin_Physmat");
+                    else if (col.GetComponent<XCAPE.Gameplay.BallController>()) AssignPhysicMaterial(col, "XCAPE_Ball_Physmat");
+                }
+                foreach (var rb in root.GetComponentsInChildren<Rigidbody>(true))
+                {
+                    // Ajustes suaves para mantener estabilidad
+                    rb.interpolation = RigidbodyInterpolation.Interpolate;
+                    if (rb.GetComponent<XCAPE.Gameplay.BallController>())
+                    {
+                        rb.drag = 0.05f; rb.angularDrag = 0.6f; rb.maxAngularVelocity = 100f;
+                    }
+                }
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorUtility.DisplayDialog("XCAPE", "Tuning de física y materiales aplicado a la escena.", "OK");
         }
 
         private void CreateBasicHUD(XCAPE.Core.UIManager ui)

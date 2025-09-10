@@ -11,20 +11,19 @@ namespace XCAPE.Gameplay
     [RequireComponent(typeof(Rigidbody), typeof(SphereCollider), typeof(AudioSource))]
     public class BallController : MonoBehaviour
     {
-        [Header("Physics Settings")]
-        [SerializeField] private float ballMass = 7.26f; // Peso real de bola de boliche (16 lbs)
-        [SerializeField] private float launchForceMultiplier = 15f;
-        [SerializeField] private float maxLaunchSpeed = 22f; // Velocidad máxima realista (mph convertido)
-        [SerializeField] private float minLaunchSpeed = 5f;
-        [SerializeField] private float spinMultiplier = 8f;
-        [SerializeField] private float gutterBounceForce = 3f;
+    [Header("Physics Settings")]
+    [SerializeField] private float ballMass = 7.26f; // Peso real de bola de boliche (16 lbs)
+    [SerializeField] private float maxLaunchSpeed = 10f; // m/s (≈22.4 mph) pico realista en amateur ~8-10 m/s
+    [SerializeField] private float minLaunchSpeed = 3f;  // m/s
+    [SerializeField] private float sideSpinMaxOmega = 25f; // rad/s de spin lateral (eje Y) a máxima entrada
+    [SerializeField] private float magnusCoefficient = 0.02f; // coef. para curvatura (F = k * ω × v)
+    [SerializeField] private float gutterBounceForce = 3f;
         
-        [Header("Friction & Rolling")]
-        [SerializeField] private float laneRollingFriction = 0.02f;
-        [SerializeField] private float approachFriction = 0.3f;
-        [SerializeField] private float gutterFriction = 0.8f;
-        [SerializeField] private PhysicMaterial ballPhysicMaterial;
-        [SerializeField] private PhysicMaterial lanePhysicMaterial;
+    [Header("Friction & Rolling")]
+    [SerializeField] private float laneRollingFriction = 0.012f; // pista aceitada: baja fricción efectiva de rodadura
+    [SerializeField] private float gutterFriction = 0.7f;
+    [SerializeField] private PhysicMaterial ballPhysicMaterial;
+    [SerializeField] private PhysicMaterial lanePhysicMaterial;
         
         [Header("Touch Controls")]
         [SerializeField] private float touchSensitivity = 2f;
@@ -106,7 +105,7 @@ namespace XCAPE.Gameplay
         #endregion
 
         #region Initialization
-        private void InitializeComponents()
+    private void InitializeComponents()
         {
             _rb = GetComponent<Rigidbody>();
             _collider = GetComponent<SphereCollider>();
@@ -116,11 +115,11 @@ namespace XCAPE.Gameplay
             {
                 ballPhysicMaterial = new PhysicMaterial("BallMaterial")
                 {
-                    dynamicFriction = 0.3f,
-                    staticFriction = 0.4f,
-                    bounciness = 0.2f,
-                    frictionCombine = PhysicMaterialCombine.Average,
-                    bounceCombine = PhysicMaterialCombine.Average
+            dynamicFriction = 0.06f,
+            staticFriction = 0.08f,
+            bounciness = 0.02f,
+            frictionCombine = PhysicMaterialCombine.Minimum,
+            bounceCombine = PhysicMaterialCombine.Minimum
                 };
             }
         }
@@ -128,9 +127,9 @@ namespace XCAPE.Gameplay
         private void SetupPhysics()
         {
             _rb.mass = ballMass;
-            _rb.drag = 0.1f;
-            _rb.angularDrag = 2f;
-            _rb.maxAngularVelocity = 50f;
+            _rb.drag = 0.05f;
+            _rb.angularDrag = 0.6f; // menor para mantener rodadura
+            _rb.maxAngularVelocity = 100f;
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
             _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
             
@@ -250,13 +249,15 @@ namespace XCAPE.Gameplay
             // Calcular velocidad de lanzamiento
             float launchSpeed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, _currentPower);
             Vector3 launchVelocity = _launchDirection * launchSpeed;
-            
-            // Aplicar fuerza de lanzamiento
+
+            // Aplicar velocidad de lanzamiento
             _rb.velocity = launchVelocity;
-            
-            // Aplicar spin
-            Vector3 spinTorque = new Vector3(0, _currentSpin * spinMultiplier, 0);
-            _rb.angularVelocity = spinTorque;
+
+            // Componer rodadura (spin hacia adelante) y spin lateral (eje Y) para hook
+            Vector3 rollAxis = Vector3.Cross(Vector3.up, _launchDirection).normalized; // eje perpendicular a dirección y arriba
+            float rollOmega = launchSpeed / Mathf.Max(_collider.radius, 0.0001f);       // ω = v/r
+            float sideOmega = _currentSpin * sideSpinMaxOmega;                           // spin lateral proporcional a entrada
+            _rb.angularVelocity = rollAxis * rollOmega + Vector3.up * sideOmega;
             
             // Efectos visuales y audio
             if (ballTrail) ballTrail.enabled = true;
@@ -298,18 +299,25 @@ namespace XCAPE.Gameplay
         {
             if (!_isLaunched) return;
             
-            // Simular resistencia del aire
+            // Simular resistencia del aire (simplificada)
             if (_rb.velocity.magnitude > 0.1f)
             {
-                Vector3 airResistance = -_rb.velocity.normalized * (_rb.velocity.sqrMagnitude * 0.001f);
+                Vector3 airResistance = -_rb.velocity.normalized * (_rb.velocity.sqrMagnitude * 0.0008f);
                 _rb.AddForce(airResistance, ForceMode.Force);
             }
-            
-            // Aplicar efecto del spin en el movimiento (hook)
-            if (_rb.angularVelocity.magnitude > 0.1f && _isOnLane)
+
+            // Efecto Magnus: F = k * (ω × v)
+            if (_isOnLane && _rb.angularVelocity.sqrMagnitude > 0.01f && _rb.velocity.sqrMagnitude > 0.01f)
             {
-                Vector3 spinEffect = Vector3.Cross(_rb.angularVelocity, Vector3.up) * 0.1f;
-                _rb.AddForce(spinEffect, ForceMode.Force);
+                Vector3 magnus = magnusCoefficient * Vector3.Cross(_rb.angularVelocity, _rb.velocity);
+                _rb.AddForce(magnus, ForceMode.Force);
+            }
+
+            // Limitar velocidad lineal
+            float speed = _rb.velocity.magnitude;
+            if (speed > maxLaunchSpeed)
+            {
+                _rb.velocity = _rb.velocity.normalized * maxLaunchSpeed;
             }
         }
 
@@ -347,13 +355,18 @@ namespace XCAPE.Gameplay
             Vector3[] points = new Vector3[trajectoryPoints];
             Vector3 startPos = transform.position;
             Vector3 velocity = _launchDirection * Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, _currentPower);
+            // Aproximación: considerar leve pérdida por fricción y desviación lateral por Magnus ideal
+            Vector3 omega = Vector3.up * (_currentSpin * sideSpinMaxOmega) + Vector3.Cross(Vector3.up, _launchDirection).normalized * (velocity.magnitude / Mathf.Max(_collider.radius, 0.0001f));
             
             for (int i = 0; i < trajectoryPoints; i++)
             {
                 float time = i * trajectoryTimeStep;
-                points[i] = startPos + velocity * time + 0.5f * Physics.gravity * time * time;
-                
-                // Aplicar efecto de fricción simplificado
+                // Integración simple con gravedad y magnus
+                Vector3 magnus = magnusCoefficient * Vector3.Cross(omega, velocity);
+                Vector3 accel = Physics.gravity + (magnus / Mathf.Max(ballMass, 0.0001f));
+                points[i] = startPos + velocity * time + 0.5f * accel * time * time;
+
+                // Pérdidas por fricción lineal simplificadas
                 velocity *= (1f - laneRollingFriction * trajectoryTimeStep);
             }
             
