@@ -50,6 +50,10 @@ namespace XCAPE.Editor
             {
                 ApplyPhysicsAndMaterialsTuning();
             }
+            if (GUILayout.Button("Add Lobby Panel to Current Scene"))
+            {
+                AddLobbyPanelToCurrentScene();
+            }
             if (GUILayout.Button("Switch Platform to Android"))
             {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
@@ -668,35 +672,7 @@ namespace XCAPE.Editor
             soMPC.ApplyModifiedPropertiesWithoutUndo();
 
             // Lobby panel (Relay + Lobbies)
-            var lobbyPanel = new GameObject("LobbyPanel");
-            lobbyPanel.transform.SetParent(canvasGO.transform, false);
-            var lpImg = lobbyPanel.AddComponent<UnityEngine.UI.Image>(); lpImg.color = new Color(0,0,0,0.45f);
-            var lpRT = lpImg.rectTransform; lpRT.anchorMin = new Vector2(0.7f,0.4f); lpRT.anchorMax = new Vector2(0.95f,0.9f); lpRT.offsetMin = Vector2.zero; lpRT.offsetMax = Vector2.zero;
-            var nameLabel = CreateText(lobbyPanel.transform, "Lobby Name", 14, new Vector2(0.5f,0.85f));
-            var nameInputGO = new GameObject("LobbyName"); nameInputGO.transform.SetParent(lobbyPanel.transform, false);
-            var nameInput = nameInputGO.AddComponent<UnityEngine.UI.InputField>();
-            nameInput.textComponent = CreateText(nameInputGO.transform, "XCAPE", 16, new Vector2(0.5f,0.75f));
-            var joinLabel = CreateText(lobbyPanel.transform, "Join Code", 14, new Vector2(0.5f,0.6f));
-            var joinInputGO = new GameObject("JoinCode"); joinInputGO.transform.SetParent(lobbyPanel.transform, false);
-            var joinInput = joinInputGO.AddComponent<UnityEngine.UI.InputField>();
-            joinInput.textComponent = CreateText(joinInputGO.transform, "", 16, new Vector2(0.5f,0.5f));
-            var createBtn = CreateButton(lobbyPanel.transform, "Create Lobby", new Vector2(0.5f,0.35f));
-            var joinBtn2 = CreateButton(lobbyPanel.transform, "Join Lobby", new Vector2(0.5f,0.27f));
-            var leaveBtn = CreateButton(lobbyPanel.transform, "Leave", new Vector2(0.5f,0.19f));
-            var codeText = CreateText(lobbyPanel.transform, "Code: -", 14, new Vector2(0.5f,0.1f));
-            var statusText = CreateText(lobbyPanel.transform, "Idle", 12, new Vector2(0.5f,0.05f));
-
-            var rlm = Object.FindObjectOfType<XCAPE.Networking.RelayLobbyManager>() ?? new GameObject("RelayLobbyManager").AddComponent<XCAPE.Networking.RelayLobbyManager>();
-            var lpc = lobbyPanel.AddComponent<XCAPE.UI.LobbyPanelController>();
-            var soLPC = new SerializedObject(lpc);
-            soLPC.FindProperty("lobbyNameField").objectReferenceValue = nameInput;
-            soLPC.FindProperty("joinCodeField").objectReferenceValue = joinInput;
-            soLPC.FindProperty("createButton").objectReferenceValue = createBtn;
-            soLPC.FindProperty("joinButton").objectReferenceValue = joinBtn2;
-            soLPC.FindProperty("leaveButton").objectReferenceValue = leaveBtn;
-            soLPC.FindProperty("statusText").objectReferenceValue = statusText;
-            soLPC.FindProperty("joinCodeText").objectReferenceValue = codeText;
-            soLPC.ApplyModifiedPropertiesWithoutUndo();
+            BuildLobbyPanel(canvasGO.transform);
 
             // Settings panel
             var settingsPanel = new GameObject("SettingsPanel");
@@ -729,6 +705,66 @@ namespace XCAPE.Editor
             soSP.FindProperty("sfxSlider").objectReferenceValue = settingsPanel.transform.Find("Slider_SFX").GetComponent<UnityEngine.UI.Slider>();
             soSP.FindProperty("performanceToggle").objectReferenceValue = perfToggle;
             soSP.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private void BuildLobbyPanel(Transform canvasTransform)
+        {
+            var lobbyPanel = new GameObject("LobbyPanel");
+            lobbyPanel.transform.SetParent(canvasTransform, false);
+            var lpImg = lobbyPanel.AddComponent<UnityEngine.UI.Image>(); lpImg.color = new Color(0,0,0,0.45f);
+            var lpRT = lpImg.rectTransform; lpRT.anchorMin = new Vector2(0.7f,0.4f); lpRT.anchorMax = new Vector2(0.95f,0.9f); lpRT.offsetMin = Vector2.zero; lpRT.offsetMax = Vector2.zero;
+            CreateText(lobbyPanel.transform, "Lobby Name", 14, new Vector2(0.5f,0.85f));
+            var nameInputGO = new GameObject("LobbyName"); nameInputGO.transform.SetParent(lobbyPanel.transform, false);
+            var nameInput = nameInputGO.AddComponent<UnityEngine.UI.InputField>();
+            nameInput.textComponent = CreateText(nameInputGO.transform, "XCAPE", 16, new Vector2(0.5f,0.75f));
+            CreateText(lobbyPanel.transform, "Join Code", 14, new Vector2(0.5f,0.6f));
+            var joinInputGO = new GameObject("JoinCode"); joinInputGO.transform.SetParent(lobbyPanel.transform, false);
+            var joinInput = joinInputGO.AddComponent<UnityEngine.UI.InputField>();
+            joinInput.textComponent = CreateText(joinInputGO.transform, "", 16, new Vector2(0.5f,0.5f));
+            var createBtn = CreateButton(lobbyPanel.transform, "Create Lobby", new Vector2(0.5f,0.35f));
+            var joinBtn2 = CreateButton(lobbyPanel.transform, "Join Lobby", new Vector2(0.5f,0.27f));
+            var leaveBtn = CreateButton(lobbyPanel.transform, "Leave", new Vector2(0.5f,0.19f));
+            var codeText = CreateText(lobbyPanel.transform, "Code: -", 14, new Vector2(0.5f,0.1f));
+            var statusText = CreateText(lobbyPanel.transform, "Idle", 12, new Vector2(0.5f,0.05f));
+
+            var _ = Object.FindObjectOfType<XCAPE.Networking.RelayLobbyManager>() ?? new GameObject("RelayLobbyManager").AddComponent<XCAPE.Networking.RelayLobbyManager>();
+            var lpc = lobbyPanel.AddComponent<XCAPE.UI.LobbyPanelController>();
+            var soLPC = new SerializedObject(lpc);
+            soLPC.FindProperty("lobbyNameField").objectReferenceValue = nameInput;
+            soLPC.FindProperty("joinCodeField").objectReferenceValue = joinInput;
+            soLPC.FindProperty("createButton").objectReferenceValue = createBtn;
+            soLPC.FindProperty("joinButton").objectReferenceValue = joinBtn2;
+            soLPC.FindProperty("leaveButton").objectReferenceValue = leaveBtn;
+            soLPC.FindProperty("statusText").objectReferenceValue = statusText;
+            soLPC.FindProperty("joinCodeText").objectReferenceValue = codeText;
+            soLPC.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private void AddLobbyPanelToCurrentScene()
+        {
+            var active = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            if (!active.IsValid())
+            {
+                EditorUtility.DisplayDialog("XCAPE", "No active scene found.", "OK");
+                return;
+            }
+            var canvas = Object.FindObjectOfType<UnityEngine.Canvas>();
+            if (canvas == null)
+            {
+                var canvasGO = new GameObject("Canvas");
+                canvas = canvasGO.AddComponent<UnityEngine.Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                if (!Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>())
+                {
+                    var es = new GameObject("EventSystem");
+                    es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                    es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
+            }
+            BuildLobbyPanel(canvas.transform);
+            EditorUtility.DisplayDialog("XCAPE", "Lobby Panel added to current scene.", "OK");
         }
 
         private UnityEngine.UI.Text CreateText(Transform parent, string text, int size, Vector2 anchor)
