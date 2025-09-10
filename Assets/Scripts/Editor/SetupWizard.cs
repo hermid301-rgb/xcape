@@ -57,6 +57,10 @@ namespace XCAPE.Editor
             {
                 EnsureUnityPackages();
             }
+            if (GUILayout.Button("Open Services Project Settings"))
+            {
+                OpenServicesSettings();
+            }
             if (GUILayout.Button("Add Lobby Panel to Current Scene"))
             {
                 AddLobbyPanelToCurrentScene();
@@ -807,6 +811,15 @@ namespace XCAPE.Editor
             BuildLobbyPanel(canvas.transform);
             EditorUtility.DisplayDialog("XCAPE", "Lobby Panel added to current scene.", "OK");
         }
+
+    private void OpenServicesSettings()
+    {
+#if UNITY_2021_3_OR_NEWER
+        SettingsService.OpenProjectSettings("Project/Services");
+#else
+        EditorUtility.DisplayDialog("XCAPE", "Open Project Settings > Services to link your project to Unity Gaming Services.", "OK");
+#endif
+    }
 
         // ===== Unity Packages Installer =====
         private Queue<string> _packagesQueue;
