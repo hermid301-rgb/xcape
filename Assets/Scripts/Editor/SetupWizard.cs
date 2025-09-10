@@ -301,6 +301,7 @@ namespace XCAPE.Editor
             var sm = managers.AddComponent<XCAPE.Core.ScoreManager>();
             var am = managers.AddComponent<XCAPE.Core.AudioManager>();
             var ui = managers.AddComponent<XCAPE.Core.UIManager>();
+            managers.AddComponent<XCAPE.Core.InputManager>();
 
             // UI
             CreateBasicHUD(ui);
