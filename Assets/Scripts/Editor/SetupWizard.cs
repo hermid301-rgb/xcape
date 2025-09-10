@@ -18,6 +18,9 @@ using UnityEditor.Build.Reporting;
 using UnityEditorInternal.VR;
 using UnityEditor.Experimental.GraphView;
 using System.Linq;
+using System.Collections.Generic;
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 
 namespace XCAPE.Editor
 {
@@ -49,6 +52,10 @@ namespace XCAPE.Editor
             if (GUILayout.Button("Apply Physics & Materials Tuning"))
             {
                 ApplyPhysicsAndMaterialsTuning();
+            }
+            if (GUILayout.Button("Ensure Unity Services & Netcode Packages"))
+            {
+                EnsureUnityPackages();
             }
             if (GUILayout.Button("Add Lobby Panel to Current Scene"))
             {
@@ -712,20 +719,51 @@ namespace XCAPE.Editor
             var lobbyPanel = new GameObject("LobbyPanel");
             lobbyPanel.transform.SetParent(canvasTransform, false);
             var lpImg = lobbyPanel.AddComponent<UnityEngine.UI.Image>(); lpImg.color = new Color(0,0,0,0.45f);
-            var lpRT = lpImg.rectTransform; lpRT.anchorMin = new Vector2(0.7f,0.4f); lpRT.anchorMax = new Vector2(0.95f,0.9f); lpRT.offsetMin = Vector2.zero; lpRT.offsetMax = Vector2.zero;
-            CreateText(lobbyPanel.transform, "Lobby Name", 14, new Vector2(0.5f,0.85f));
+            var lpRT = lpImg.rectTransform; lpRT.anchorMin = new Vector2(0.65f,0.25f); lpRT.anchorMax = new Vector2(0.95f,0.95f); lpRT.offsetMin = Vector2.zero; lpRT.offsetMax = Vector2.zero;
+
+            // Title
+            CreateText(lobbyPanel.transform, "Lobby", 18, new Vector2(0.5f,0.95f));
+
+            // Lobby name + input
+            CreateText(lobbyPanel.transform, "Lobby Name", 14, new Vector2(0.5f,0.89f));
             var nameInputGO = new GameObject("LobbyName"); nameInputGO.transform.SetParent(lobbyPanel.transform, false);
+            var nameIFBG = nameInputGO.AddComponent<UnityEngine.UI.Image>(); nameIFBG.color = new Color(1,1,1,0.08f);
             var nameInput = nameInputGO.AddComponent<UnityEngine.UI.InputField>();
-            nameInput.textComponent = CreateText(nameInputGO.transform, "XCAPE", 16, new Vector2(0.5f,0.75f));
-            CreateText(lobbyPanel.transform, "Join Code", 14, new Vector2(0.5f,0.6f));
+            nameInput.textComponent = CreateText(nameInputGO.transform, "XCAPE", 16, new Vector2(0.5f,0.0f));
+            var nameRT = nameIFBG.rectTransform; nameRT.anchorMin = new Vector2(0.1f,0.83f); nameRT.anchorMax = new Vector2(0.9f,0.87f); nameRT.offsetMin = Vector2.zero; nameRT.offsetMax = Vector2.zero;
+            nameInput.lineType = UnityEngine.UI.InputField.LineType.SingleLine;
+            nameInput.characterValidation = UnityEngine.UI.InputField.CharacterValidation.Alphanumeric;
+
+            // Join code + input
+            CreateText(lobbyPanel.transform, "Join Code", 14, new Vector2(0.5f,0.80f));
             var joinInputGO = new GameObject("JoinCode"); joinInputGO.transform.SetParent(lobbyPanel.transform, false);
+            var joinIFBG = joinInputGO.AddComponent<UnityEngine.UI.Image>(); joinIFBG.color = new Color(1,1,1,0.08f);
             var joinInput = joinInputGO.AddComponent<UnityEngine.UI.InputField>();
-            joinInput.textComponent = CreateText(joinInputGO.transform, "", 16, new Vector2(0.5f,0.5f));
-            var createBtn = CreateButton(lobbyPanel.transform, "Create Lobby", new Vector2(0.5f,0.35f));
-            var joinBtn2 = CreateButton(lobbyPanel.transform, "Join Lobby", new Vector2(0.5f,0.27f));
-            var leaveBtn = CreateButton(lobbyPanel.transform, "Leave", new Vector2(0.5f,0.19f));
-            var codeText = CreateText(lobbyPanel.transform, "Code: -", 14, new Vector2(0.5f,0.1f));
-            var statusText = CreateText(lobbyPanel.transform, "Idle", 12, new Vector2(0.5f,0.05f));
+            joinInput.textComponent = CreateText(joinInputGO.transform, "", 16, new Vector2(0.5f,0.0f));
+            var joinRT = joinIFBG.rectTransform; joinRT.anchorMin = new Vector2(0.1f,0.74f); joinRT.anchorMax = new Vector2(0.9f,0.78f); joinRT.offsetMin = Vector2.zero; joinRT.offsetMax = Vector2.zero;
+            joinInput.lineType = UnityEngine.UI.InputField.LineType.SingleLine;
+            joinInput.characterValidation = UnityEngine.UI.InputField.CharacterValidation.Alphanumeric;
+            joinInput.characterLimit = 6;
+
+            // Players list container
+            var listRoot = new GameObject("PlayersList"); listRoot.transform.SetParent(lobbyPanel.transform, false);
+            var listImg = listRoot.AddComponent<UnityEngine.UI.Image>(); listImg.color = new Color(1,1,1,0.05f);
+            var listRT = listImg.rectTransform; listRT.anchorMin = new Vector2(0.05f,0.36f); listRT.anchorMax = new Vector2(0.95f,0.72f); listRT.offsetMin = Vector2.zero; listRT.offsetMax = Vector2.zero;
+            listRoot.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+
+            // Buttons
+            var createBtn = CreateButton(lobbyPanel.transform, "Create Lobby", new Vector2(0.5f,0.30f));
+            var joinBtn2  = CreateButton(lobbyPanel.transform, "Join Lobby", new Vector2(0.5f,0.23f));
+            var leaveBtn  = CreateButton(lobbyPanel.transform, "Leave",        new Vector2(0.5f,0.16f));
+
+            // Ready + Start
+            var readyToggle = CreateToggle(lobbyPanel.transform, "I'm Ready", new Vector2(0.3f, 0.09f));
+            var startBtn = CreateButton(lobbyPanel.transform, "Start Game", new Vector2(0.7f, 0.09f));
+            (startBtn.targetGraphic as UnityEngine.UI.Image).color = new Color(0.2f,0.7f,0.2f,0.25f);
+
+            // Codes / status
+            var codeText = CreateText(lobbyPanel.transform, "Code: -", 14, new Vector2(0.5f,0.045f));
+            var statusText = CreateText(lobbyPanel.transform, "Idle", 12, new Vector2(0.5f,0.01f));
 
             var _ = Object.FindObjectOfType<XCAPE.Networking.RelayLobbyManager>() ?? new GameObject("RelayLobbyManager").AddComponent<XCAPE.Networking.RelayLobbyManager>();
             var lpc = lobbyPanel.AddComponent<XCAPE.UI.LobbyPanelController>();
@@ -735,6 +773,9 @@ namespace XCAPE.Editor
             soLPC.FindProperty("createButton").objectReferenceValue = createBtn;
             soLPC.FindProperty("joinButton").objectReferenceValue = joinBtn2;
             soLPC.FindProperty("leaveButton").objectReferenceValue = leaveBtn;
+            soLPC.FindProperty("playersListRoot").objectReferenceValue = listRoot.GetComponent<RectTransform>();
+            soLPC.FindProperty("readyToggle").objectReferenceValue = readyToggle;
+            soLPC.FindProperty("startButton").objectReferenceValue = startBtn;
             soLPC.FindProperty("statusText").objectReferenceValue = statusText;
             soLPC.FindProperty("joinCodeText").objectReferenceValue = codeText;
             soLPC.ApplyModifiedPropertiesWithoutUndo();
@@ -765,6 +806,70 @@ namespace XCAPE.Editor
             }
             BuildLobbyPanel(canvas.transform);
             EditorUtility.DisplayDialog("XCAPE", "Lobby Panel added to current scene.", "OK");
+        }
+
+        // ===== Unity Packages Installer =====
+        private Queue<string> _packagesQueue;
+        private AddRequest _currentAdd;
+        private ListRequest _listRequest;
+
+        private static readonly string[] RequiredPackages = new[]
+        {
+            "com.unity.services.core",
+            "com.unity.services.authentication",
+            "com.unity.services.lobbies",
+            "com.unity.services.relay",
+            "com.unity.transport",
+            "com.unity.netcode.gameobjects"
+        };
+
+        private void EnsureUnityPackages()
+        {
+            _listRequest = Client.List(true);
+            EditorApplication.update += OnListProgress;
+            EditorUtility.DisplayProgressBar("XCAPE", "Checking installed packages...", 0.1f);
+        }
+
+        private void OnListProgress()
+        {
+            if (_listRequest == null) return;
+            if (!_listRequest.IsCompleted) return;
+            EditorApplication.update -= OnListProgress;
+            var installed = new HashSet<string>(_listRequest.Result.Select(p => p.name));
+            _packagesQueue = new Queue<string>(RequiredPackages.Where(p => !installed.Contains(p)));
+            EditorUtility.ClearProgressBar();
+            if (_packagesQueue.Count == 0)
+            {
+                EditorUtility.DisplayDialog("XCAPE", "All required packages are already installed.", "OK");
+                return;
+            }
+            InstallNextPackage();
+        }
+
+        private void InstallNextPackage()
+        {
+            if (_packagesQueue == null || _packagesQueue.Count == 0)
+            {
+                EditorUtility.ClearProgressBar();
+                EditorUtility.DisplayDialog("XCAPE", "Unity Services & Netcode packages installation finished.", "OK");
+                return;
+            }
+            var pkg = _packagesQueue.Dequeue();
+            EditorUtility.DisplayProgressBar("XCAPE", $"Installing {pkg}...", 0.5f);
+            _currentAdd = Client.Add(pkg);
+            EditorApplication.update += OnAddProgress;
+        }
+
+        private void OnAddProgress()
+        {
+            if (_currentAdd == null) return;
+            if (!_currentAdd.IsCompleted) return;
+            EditorApplication.update -= OnAddProgress;
+            if (_currentAdd.Status == StatusCode.Failure)
+            {
+                Debug.LogError($"Failed to install package: {_currentAdd.Error?.message}");
+            }
+            InstallNextPackage();
         }
 
         private UnityEngine.UI.Text CreateText(Transform parent, string text, int size, Vector2 anchor)
