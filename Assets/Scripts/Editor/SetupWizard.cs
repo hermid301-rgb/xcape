@@ -62,6 +62,11 @@ namespace XCAPE.Editor
             {
                 EnsureUnityPackages();
             }
+
+            if (GUILayout.Button("Install Google Mobile Ads (AdMob)"))
+            {
+                InstallAdMobSDK();
+            }
             if (GUILayout.Button("Open Services Project Settings"))
             {
                 OpenServicesSettings();
@@ -1105,6 +1110,52 @@ namespace XCAPE.Editor
             var rt = img.rectTransform; rt.anchorMin = anchor; rt.anchorMax = anchor; rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(260, 30);
             var text = CreateText(go.transform, label, 18, new Vector2(0.65f,0.5f)); text.rectTransform.sizeDelta = new Vector2(200, 24);
             return toggle;
+        }
+
+        private void InstallAdMobSDK()
+        {
+            Debug.Log("[SetupWizard] Installing Google Mobile Ads SDK...");
+            
+            // Add AdMob via Package Manager (Git URL)
+            var addRequest = Client.Add("https://github.com/googleads/googleads-mobile-unity.git");
+            
+            EditorApplication.update += () =>
+            {
+                if (addRequest.IsCompleted)
+                {
+                    EditorApplication.update -= () => { };
+                    
+                    if (addRequest.Status == StatusCode.Success)
+                    {
+                        Debug.Log("[SetupWizard] Google Mobile Ads SDK installed successfully");
+                        
+                        // Add scripting define symbol for AdMob
+                        var target = EditorUserBuildSettings.selectedBuildTargetGroup;
+                        var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(target);
+                        if (!defines.Contains("GOOGLE_MOBILE_ADS"))
+                        {
+                            PlayerSettings.SetScriptingDefineSymbolsForGroup(target, defines + ";GOOGLE_MOBILE_ADS");
+                            Debug.Log("[SetupWizard] Added GOOGLE_MOBILE_ADS scripting define");
+                        }
+                        
+                        EditorUtility.DisplayDialog("XCAPE", 
+                            "Google Mobile Ads SDK installed successfully!\n\n" +
+                            "Next steps:\n" +
+                            "1. Get your Ad Unit IDs from AdMob console\n" +
+                            "2. Replace test IDs in AdManager.cs\n" +
+                            "3. Configure app-ads.txt for your domain", "OK");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[SetupWizard] Failed to install AdMob SDK: {addRequest.Error.message}");
+                        EditorUtility.DisplayDialog("Error", 
+                            $"Failed to install AdMob SDK: {addRequest.Error.message}\n\n" +
+                            "You can install manually from:\n" +
+                            "Window > Package Manager > + > Add from Git URL\n" +
+                            "https://github.com/googleads/googleads-mobile-unity.git", "OK");
+                    }
+                }
+            };
         }
 
     }

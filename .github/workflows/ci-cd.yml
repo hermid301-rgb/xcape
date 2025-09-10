@@ -1,0 +1,158 @@
+name: XCAPE Bowling CI/CD
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  UNITY_VERSION: 2023.3.40f1
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+            Library-${{ runner.os }}-
+
+      - name: Run Unity Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: EditMode
+          checkName: 'Edit Mode Test Results'
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test-Results
+          path: artifacts/
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+            Library-${{ runner.os }}-
+
+      - name: Build Android
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
+          UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
+          UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          buildMethod: XCAPE.Build.BuildAutomation.BuildAndroid
+          allowDirtyBuild: true
+
+      - name: Upload Android Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: Android-Build
+          path: build/Android/
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+            Library-${{ runner.os }}-
+
+      - name: Build iOS
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
+          UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
+          UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: iOS
+          buildMethod: XCAPE.Build.BuildAutomation.BuildiOS
+          allowDirtyBuild: true
+
+      - name: Upload iOS Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: iOS-Build
+          path: build/iOS/
+
+  deploy:
+    name: Deploy to Stores
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[deploy]')
+    steps:
+      - name: Download Android Build
+        uses: actions/download-artifact@v3
+        with:
+          name: Android-Build
+          path: android/
+
+      - name: Download iOS Build
+        uses: actions/download-artifact@v3
+        with:
+          name: iOS-Build
+          path: ios/
+
+      # TODO: Add Google Play Console upload
+      # TODO: Add App Store Connect upload
+      - name: Store Deploy Placeholder
+        run: |
+          echo "Deploy to stores would happen here"
+          echo "Android AAB: $(find android/ -name '*.aab' | head -1)"
+          echo "iOS IPA: $(find ios/ -name '*.ipa' | head -1)"
