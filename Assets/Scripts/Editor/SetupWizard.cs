@@ -412,20 +412,48 @@ namespace XCAPE.Editor
             var scRT = scText.rectTransform; scRT.anchorMin = new Vector2(0,0); scRT.anchorMax = new Vector2(0,0); scRT.anchoredPosition = new Vector2(10,10); scRT.sizeDelta = new Vector2(360, 260);
             scorecardGO.AddComponent<XCAPE.UI.ScorecardUI>();
 
+            // Bowling score grid (compact)
+            var gridRoot = new GameObject("BowlingScoreGrid");
+            gridRoot.transform.SetParent(canvasGO.transform, false);
+            var gridRT = gridRoot.AddComponent<RectTransform>(); gridRT.anchorMin = new Vector2(0.5f,1f); gridRT.anchorMax = new Vector2(0.5f,1f); gridRT.anchoredPosition = new Vector2(0,-20); gridRT.sizeDelta = new Vector2(640, 120);
+            gridRoot.AddComponent<XCAPE.UI.BowlingScoreGrid>();
+
             // Pause panel básico
             var pausePanel = new GameObject("PausePanel");
             pausePanel.transform.SetParent(canvasGO.transform, false);
             var ppImg = pausePanel.AddComponent<UnityEngine.UI.Image>(); ppImg.color = new Color(0,0,0,0.6f);
             var ppRT = ppImg.rectTransform; ppRT.anchorMin = new Vector2(0.2f,0.2f); ppRT.anchorMax = new Vector2(0.8f,0.8f); ppRT.offsetMin = Vector2.zero; ppRT.offsetMax = Vector2.zero; pausePanel.SetActive(false);
-            var resumeBtn = CreateButton(pausePanel.transform, "Resume", new Vector2(0.5f,0.6f));
-            var restartBtn = CreateButton(pausePanel.transform, "Restart", new Vector2(0.5f,0.5f));
-            var menuBtn = CreateButton(pausePanel.transform, "Menu", new Vector2(0.5f,0.4f));
+            var resumeBtn = CreateButton(pausePanel.transform, "Resume", new Vector2(0.5f,0.65f));
+            var restartBtn = CreateButton(pausePanel.transform, "Restart", new Vector2(0.5f,0.55f));
+            var menuBtn = CreateButton(pausePanel.transform, "Menu", new Vector2(0.5f,0.45f));
             var pmc = pausePanel.AddComponent<XCAPE.UI.PauseMenuController>();
             var soPM = new SerializedObject(pmc);
             soPM.FindProperty("resumeButton").objectReferenceValue = resumeBtn;
             soPM.FindProperty("restartButton").objectReferenceValue = restartBtn;
             soPM.FindProperty("quitButton").objectReferenceValue = menuBtn;
             soPM.ApplyModifiedPropertiesWithoutUndo();
+
+            // Game Over panel
+            var goPanel = new GameObject("GameOverPanel");
+            goPanel.transform.SetParent(canvasGO.transform, false);
+            var goImg = goPanel.AddComponent<UnityEngine.UI.Image>(); goImg.color = new Color(0,0,0,0.75f);
+            var goRT = goImg.rectTransform; goRT.anchorMin = new Vector2(0.15f,0.2f); goRT.anchorMax = new Vector2(0.85f,0.8f); goRT.offsetMin = Vector2.zero; goRT.offsetMax = Vector2.zero; goPanel.SetActive(false);
+            var titleGO = CreateText(goPanel.transform, "Game Over", 32, new Vector2(0.5f,0.85f));
+            var finalText = CreateText(goPanel.transform, "Score: 000", 24, new Vector2(0.5f,0.65f)); finalText.name = "FinalScoreText";
+            var highText = CreateText(goPanel.transform, "High: 000", 20, new Vector2(0.5f,0.58f)); highText.name = "HighScoreText";
+            var strikesText = CreateText(goPanel.transform, "Strikes: 0", 18, new Vector2(0.5f,0.50f)); strikesText.name = "StrikesText";
+            var sparesText = CreateText(goPanel.transform, "Spares: 0", 18, new Vector2(0.5f,0.44f)); sparesText.name = "SparesText";
+            var againBtn = CreateButton(goPanel.transform, "Play Again", new Vector2(0.45f,0.3f));
+            var backBtn = CreateButton(goPanel.transform, "Menu", new Vector2(0.55f,0.3f));
+            var goc = goPanel.AddComponent<XCAPE.UI.GameOverPanelController>();
+            var soGOC = new SerializedObject(goc);
+            soGOC.FindProperty("finalScoreText").objectReferenceValue = finalText;
+            soGOC.FindProperty("highScoreText").objectReferenceValue = highText;
+            soGOC.FindProperty("strikesText").objectReferenceValue = strikesText;
+            soGOC.FindProperty("sparesText").objectReferenceValue = sparesText;
+            soGOC.FindProperty("playAgainButton").objectReferenceValue = againBtn;
+            soGOC.FindProperty("menuButton").objectReferenceValue = backBtn;
+            soGOC.ApplyModifiedPropertiesWithoutUndo();
 
             // Wire UIManager panels
             var so = new SerializedObject(ui);
@@ -436,8 +464,8 @@ namespace XCAPE.Editor
             so.FindProperty("mainMenuPanel").objectReferenceValue = null; // Solo en MainMenu
             so.FindProperty("hudPanel").objectReferenceValue = hudPanel;
             so.FindProperty("pausePanel").objectReferenceValue = pausePanel;
-            so.FindProperty("gameOverPanel").objectReferenceValue = null; // no generado aún
-            so.FindProperty("settingsPanel").objectReferenceValue = null;
+            so.FindProperty("gameOverPanel").objectReferenceValue = goPanel;
+            so.FindProperty("scoreGrid").objectReferenceValue = gridRoot;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

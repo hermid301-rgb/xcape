@@ -19,6 +19,8 @@ namespace XCAPE.Core
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private GameObject gameOverPanel;
         [SerializeField] private GameObject settingsPanel;
+    [Header("Score Grid (optional)")]
+    [SerializeField] private GameObject scoreGrid;
 
         private ScoreManager score;
 
