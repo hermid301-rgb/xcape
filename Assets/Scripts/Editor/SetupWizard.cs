@@ -336,6 +336,11 @@ namespace XCAPE.Editor
             col.height = 0.381f; col.radius = 0.06f; col.center = new Vector3(0, col.height * 0.5f, 0);
             col.material = pm.pin;
             rb.mass = 1.59f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            // Netcode components (if available)
+#if UNITY_NETCODE_GAMEOBJECTS
+            var no = go.AddComponent<Unity.Netcode.NetworkObject>();
+            go.AddComponent<Unity.Netcode.Components.NetworkTransform>();
+#endif
             var path = "Assets/Prefabs/Gameplay/Pin.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             GameObject.DestroyImmediate(go);
@@ -355,6 +360,11 @@ namespace XCAPE.Editor
             rb.mass = 7.26f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous; rb.drag = 0.1f; rb.angularDrag = 2f;
             sc.radius = 0.108f;
             sc.material = pm.ball;
+            // Netcode components (if available)
+#if UNITY_NETCODE_GAMEOBJECTS
+            var no = go.AddComponent<Unity.Netcode.NetworkObject>();
+            go.AddComponent<Unity.Netcode.Components.NetworkTransform>();
+#endif
             // Trail
             var tr = go.AddComponent<TrailRenderer>();
             tr.time = 0.3f; tr.startWidth = 0.05f; tr.endWidth = 0.01f; tr.emitting = false;

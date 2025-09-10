@@ -1,5 +1,8 @@
 using UnityEngine;
 using System.Collections;
+#if UNITY_NETCODE_GAMEOBJECTS
+using Unity.Netcode;
+#endif
 
 namespace XCAPE.Gameplay
 {
@@ -76,9 +79,12 @@ namespace XCAPE.Gameplay
 
         void Update()
         {
-            CheckPinState();
-            UpdateSettlement();
-            TrackMovement();
+            if (HasServerAuthority())
+            {
+                CheckPinState();
+                UpdateSettlement();
+                TrackMovement();
+            }
         }
 
         void FixedUpdate()
@@ -223,6 +229,7 @@ namespace XCAPE.Gameplay
         #region Physics Customization
         private void ApplyCustomPhysics()
         {
+            if (!HasServerAuthority()) return;
             // Aplicar estabilización cuando está de pie
             if (!_isKnockedDown && _rb.velocity.magnitude < 0.5f)
             {
@@ -375,6 +382,7 @@ namespace XCAPE.Gameplay
         #region Public Interface
         public void ResetPin()
         {
+            if (!HasServerAuthority()) return;
             // Resetear estado físico
             _rb.velocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
@@ -465,5 +473,15 @@ namespace XCAPE.Gameplay
             }
         }
         #endregion
+
+    private bool HasServerAuthority()
+    {
+#if UNITY_NETCODE_GAMEOBJECTS
+        if (NetworkManager.Singleton == null) return true; // offline
+        return NetworkManager.Singleton.IsServer;
+#else
+        return true;
+#endif
+    }
     }
 }

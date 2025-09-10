@@ -29,8 +29,11 @@ namespace XCAPE.Gameplay
         void Start()
         {
             _scoreManager = FindObjectOfType<ScoreManager>();
-            ResetFrame(true);
-            SubscribeBallEvents();
+            if (HasServerAuthority())
+            {
+                ResetFrame(true);
+                SubscribeBallEvents();
+            }
         }
 
         private void SubscribeBallEvents()
@@ -42,6 +45,7 @@ namespace XCAPE.Gameplay
 
         public void ResetFrame(bool fullRack)
         {
+            if (!HasServerAuthority()) return;
             // Reset bola
             if (ball && ballSpawnPoint)
             {
@@ -73,6 +77,7 @@ namespace XCAPE.Gameplay
 
         private void OnBallStopped()
         {
+            if (!HasServerAuthority()) return;
             if (!_frameActive) return;
             Invoke(nameof(ScoreAndMaybeReset), settleWaitTime);
         }
@@ -84,6 +89,7 @@ namespace XCAPE.Gameplay
 
         private void ScoreAndMaybeReset()
         {
+            if (!HasServerAuthority()) return;
             // Contar pinos caídos
             int down = 0;
             foreach (var p in pins)
@@ -117,5 +123,15 @@ namespace XCAPE.Gameplay
                 }
             }
         }
+
+    private bool HasServerAuthority()
+    {
+#if UNITY_NETCODE_GAMEOBJECTS
+        if (Unity.Netcode.NetworkManager.Singleton == null) return true;
+        return Unity.Netcode.NetworkManager.Singleton.IsServer;
+#else
+        return true;
+#endif
+    }
     }
 }
