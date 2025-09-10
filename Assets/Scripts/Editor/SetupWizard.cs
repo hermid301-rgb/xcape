@@ -830,7 +830,7 @@ namespace XCAPE.Editor
         {
             "com.unity.services.core",
             "com.unity.services.authentication",
-            "com.unity.services.lobbies",
+            "com.unity.services.lobby",
             "com.unity.services.relay",
             "com.unity.transport",
             "com.unity.netcode.gameobjects"
