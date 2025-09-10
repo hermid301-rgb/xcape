@@ -641,6 +641,22 @@ namespace XCAPE.Editor
             var settingsBtn = CreateButton(canvasGO.transform, "Settings", new Vector2(0.5f, 0.5f));
             var quitBtn = CreateButton(canvasGO.transform, "Quit", new Vector2(0.5f, 0.4f));
 
+            // Panel Multiplayer simple
+            var mpPanel = new GameObject("MultiplayerPanel");
+            mpPanel.transform.SetParent(canvasGO.transform, false);
+            var mpImg = mpPanel.AddComponent<UnityEngine.UI.Image>(); mpImg.color = new Color(0,0,0,0.35f);
+            var mpRT = mpImg.rectTransform; mpRT.anchorMin = new Vector2(0.1f,0.1f); mpRT.anchorMax = new Vector2(0.3f,0.3f); mpRT.offsetMin = Vector2.zero; mpRT.offsetMax = Vector2.zero;
+            var hostBtn = CreateButton(mpPanel.transform, "Host", new Vector2(0.5f,0.7f));
+            var joinBtn = CreateButton(mpPanel.transform, "Join", new Vector2(0.5f,0.5f));
+            var statusT = CreateText(mpPanel.transform, "Status", 14, new Vector2(0.5f,0.25f));
+            var net = Object.FindObjectOfType<XCAPE.Networking.NetcodeBootstrap>() ?? new GameObject("NetcodeBootstrap").AddComponent<XCAPE.Networking.NetcodeBootstrap>();
+            var mpc = mpPanel.AddComponent<XCAPE.UI.MultiplayerMenuController>();
+            var soMPC = new SerializedObject(mpc);
+            soMPC.FindProperty("hostButton").objectReferenceValue = hostBtn;
+            soMPC.FindProperty("joinButton").objectReferenceValue = joinBtn;
+            soMPC.FindProperty("statusTextGO").objectReferenceValue = statusT.gameObject;
+            soMPC.ApplyModifiedPropertiesWithoutUndo();
+
             // Settings panel
             var settingsPanel = new GameObject("SettingsPanel");
             settingsPanel.transform.SetParent(canvasGO.transform, false);
