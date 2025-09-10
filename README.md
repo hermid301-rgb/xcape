@@ -32,6 +32,17 @@ El editor aplicará el enlace en el arranque (Assets/Scripts/Editor/UGSLinkOnLoa
 ## Builds
 - Android: File > Build Settings > Android > Switch Platform > Build (AAB)
 - iOS: File > Build Settings > iOS > Switch Platform > Build
+- Automated: Push to main/master triggers CI builds via GitHub Actions
+
+## Testing
+- Tests: `Assets/Tests/EditMode/ScoreManagerTests.cs`
+- Run: Window > General > Test Runner > EditMode > Run All
+- CI: Tests run automatically on all PRs and pushes
+
+## Monetización
+- AdMob integrado (ver `ADMOB_SETUP.md` para configuración completa)
+- Install: Tools > XCAPE > Setup Wizard > "Install Google Mobile Ads (AdMob)"
+- Configurar App IDs y Ad Unit IDs en `AdManager.cs` y manifests
 
 ## Soporte
 Issues y roadmap en `plan.yml`.
