@@ -116,7 +116,8 @@ namespace XCAPE.Editor
                 var menuScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
                 menuScene.name = "MainMenu";
                 CreateOrFindObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
-                CreateOrFindObject("UI Canvas", typeof(Canvas));
+                // Build basic Main Menu UI
+                BuildMainMenuUI();
                 EditorSceneManager.SaveScene(menuScene, mainMenuPath);
             }
 
@@ -393,12 +394,49 @@ namespace XCAPE.Editor
             var frame = MakeLabel("FrameText", new Vector2(1,1), new Vector2(1,1), new Vector2(-150,-10));
             var total = MakeLabel("TotalText", new Vector2(1,1), new Vector2(1,1), new Vector2(-150,-40));
 
-            // Set references in UIManager
+            // Panel HUD container
+            var hudPanel = new GameObject("HUDPanel");
+            hudPanel.transform.SetParent(canvasGO.transform, false);
+
+            // Pause button
+            var pauseBtn = CreateButton(canvasGO.transform, "Pause", new Vector2(0.95f, 0.1f));
+            pauseBtn.onClick.AddListener(() => XCAPE.Core.GameManager.Instance?.PauseGame());
+
+            // Scorecard simple
+            var scorecardGO = new GameObject("ScorecardText");
+            scorecardGO.transform.SetParent(canvasGO.transform, false);
+            var scText = scorecardGO.AddComponent<UnityEngine.UI.Text>();
+            scText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            scText.fontSize = 14; scText.color = Color.white; scText.alignment = TextAnchor.UpperLeft;
+            var scRT = scText.rectTransform; scRT.anchorMin = new Vector2(0,0); scRT.anchorMax = new Vector2(0,0); scRT.anchoredPosition = new Vector2(10,10); scRT.sizeDelta = new Vector2(360, 260);
+            scorecardGO.AddComponent<XCAPE.UI.ScorecardUI>();
+
+            // Pause panel básico
+            var pausePanel = new GameObject("PausePanel");
+            pausePanel.transform.SetParent(canvasGO.transform, false);
+            var ppImg = pausePanel.AddComponent<UnityEngine.UI.Image>(); ppImg.color = new Color(0,0,0,0.6f);
+            var ppRT = ppImg.rectTransform; ppRT.anchorMin = new Vector2(0.2f,0.2f); ppRT.anchorMax = new Vector2(0.8f,0.8f); ppRT.offsetMin = Vector2.zero; ppRT.offsetMax = Vector2.zero; pausePanel.SetActive(false);
+            var resumeBtn = CreateButton(pausePanel.transform, "Resume", new Vector2(0.5f,0.6f));
+            var restartBtn = CreateButton(pausePanel.transform, "Restart", new Vector2(0.5f,0.5f));
+            var menuBtn = CreateButton(pausePanel.transform, "Menu", new Vector2(0.5f,0.4f));
+            var pmc = pausePanel.AddComponent<XCAPE.UI.PauseMenuController>();
+            var soPM = new SerializedObject(pmc);
+            soPM.FindProperty("resumeButton").objectReferenceValue = resumeBtn;
+            soPM.FindProperty("restartButton").objectReferenceValue = restartBtn;
+            soPM.FindProperty("quitButton").objectReferenceValue = menuBtn;
+            soPM.ApplyModifiedPropertiesWithoutUndo();
+
+            // Wire UIManager panels
             var so = new SerializedObject(ui);
             so.FindProperty("powerText").objectReferenceValue = power;
             so.FindProperty("spinText").objectReferenceValue = spin;
             so.FindProperty("frameText").objectReferenceValue = frame;
             so.FindProperty("totalText").objectReferenceValue = total;
+            so.FindProperty("mainMenuPanel").objectReferenceValue = null; // Solo en MainMenu
+            so.FindProperty("hudPanel").objectReferenceValue = hudPanel;
+            so.FindProperty("pausePanel").objectReferenceValue = pausePanel;
+            so.FindProperty("gameOverPanel").objectReferenceValue = null; // no generado aún
+            so.FindProperty("settingsPanel").objectReferenceValue = null;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -544,6 +582,117 @@ namespace XCAPE.Editor
             }
             return go;
         }
+
+        private void BuildMainMenuUI()
+        {
+            var canvasGO = new GameObject("Canvas_MainMenu");
+            var canvas = canvasGO.AddComponent<UnityEngine.Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+            canvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            if (!Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>())
+            {
+                var es = new GameObject("EventSystem");
+                es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            // Panel principal
+            var panel = new GameObject("Panel");
+            panel.transform.SetParent(canvasGO.transform, false);
+            var img = panel.AddComponent<UnityEngine.UI.Image>();
+            img.color = new Color(0,0,0,0.5f);
+            var rtPanel = img.rectTransform; rtPanel.anchorMin = Vector2.zero; rtPanel.anchorMax = Vector2.one; rtPanel.offsetMin = Vector2.zero; rtPanel.offsetMax = Vector2.zero;
+
+            // Titulo
+            var title = CreateText(canvasGO.transform, "XCAPE Bowling", 36, new Vector2(0.5f, 0.8f));
+
+            // Botones
+            var playBtn = CreateButton(canvasGO.transform, "Play", new Vector2(0.5f, 0.6f));
+            var settingsBtn = CreateButton(canvasGO.transform, "Settings", new Vector2(0.5f, 0.5f));
+            var quitBtn = CreateButton(canvasGO.transform, "Quit", new Vector2(0.5f, 0.4f));
+
+            // Settings panel
+            var settingsPanel = new GameObject("SettingsPanel");
+            settingsPanel.transform.SetParent(canvasGO.transform, false);
+            var spImg = settingsPanel.AddComponent<UnityEngine.UI.Image>();
+            spImg.color = new Color(0,0,0,0.7f);
+            var rtSP = spImg.rectTransform; rtSP.anchorMin = new Vector2(0.2f,0.2f); rtSP.anchorMax = new Vector2(0.8f,0.8f); rtSP.offsetMin = Vector2.zero; rtSP.offsetMax = Vector2.zero;
+            settingsPanel.SetActive(false);
+
+            // Sliders básicos
+            CreateLabeledSlider(settingsPanel.transform, "Master", new Vector2(0.5f, 0.7f));
+            CreateLabeledSlider(settingsPanel.transform, "Music", new Vector2(0.5f, 0.55f));
+            CreateLabeledSlider(settingsPanel.transform, "SFX", new Vector2(0.5f, 0.4f));
+            var perfToggle = CreateToggle(settingsPanel.transform, "Performance Mode", new Vector2(0.5f, 0.25f));
+
+            // Wire controller
+            var mm = canvasGO.AddComponent<XCAPE.UI.MainMenuController>();
+            var spc = settingsPanel.AddComponent<XCAPE.UI.SettingsPanelController>();
+            // Assign refs
+            var so = new SerializedObject(mm);
+            so.FindProperty("settingsPanel").objectReferenceValue = settingsPanel;
+            so.FindProperty("playButton").objectReferenceValue = playBtn;
+            so.FindProperty("settingsButton").objectReferenceValue = settingsBtn;
+            so.FindProperty("quitButton").objectReferenceValue = quitBtn;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var soSP = new SerializedObject(spc);
+            soSP.FindProperty("masterSlider").objectReferenceValue = settingsPanel.transform.Find("Slider_Master").GetComponent<UnityEngine.UI.Slider>();
+            soSP.FindProperty("musicSlider").objectReferenceValue = settingsPanel.transform.Find("Slider_Music").GetComponent<UnityEngine.UI.Slider>();
+            soSP.FindProperty("sfxSlider").objectReferenceValue = settingsPanel.transform.Find("Slider_SFX").GetComponent<UnityEngine.UI.Slider>();
+            soSP.FindProperty("performanceToggle").objectReferenceValue = perfToggle;
+            soSP.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private UnityEngine.UI.Text CreateText(Transform parent, string text, int size, Vector2 anchor)
+        {
+            var go = new GameObject("Text");
+            go.transform.SetParent(parent, false);
+            var t = go.AddComponent<UnityEngine.UI.Text>();
+            t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            t.text = text; t.fontSize = size; t.alignment = TextAnchor.MiddleCenter; t.color = Color.white;
+            var rt = t.rectTransform; rt.anchorMin = anchor; rt.anchorMax = anchor; rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(400, 50);
+            return t;
+        }
+
+        private UnityEngine.UI.Button CreateButton(Transform parent, string label, Vector2 anchor)
+        {
+            var go = new GameObject($"Button_{label}");
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<UnityEngine.UI.Image>();
+            img.color = new Color(1,1,1,0.1f);
+            var btn = go.AddComponent<UnityEngine.UI.Button>();
+            var rt = img.rectTransform; rt.anchorMin = anchor; rt.anchorMax = anchor; rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(220, 50);
+            var txt = CreateText(go.transform, label, 24, new Vector2(0.5f,0.5f));
+            txt.rectTransform.sizeDelta = new Vector2(200, 36);
+            return btn;
+        }
+
+        private UnityEngine.UI.Slider CreateLabeledSlider(Transform parent, string label, Vector2 anchor)
+        {
+            var go = new GameObject($"Slider_{label}");
+            go.transform.SetParent(parent, false);
+            var rt = go.AddComponent<RectTransform>(); rt.anchorMin = anchor; rt.anchorMax = anchor; rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(300, 30);
+            var text = CreateText(go.transform, label, 18, new Vector2(0.2f,0.5f)); text.rectTransform.sizeDelta = new Vector2(120, 24);
+            var sliderGO = new GameObject("Slider"); sliderGO.transform.SetParent(go.transform, false);
+            var img = sliderGO.AddComponent<UnityEngine.UI.Image>(); img.color = new Color(1,1,1,0.2f);
+            var slider = sliderGO.AddComponent<UnityEngine.UI.Slider>();
+            var srt = img.rectTransform; srt.anchorMin = new Vector2(0.45f,0.5f); srt.anchorMax = new Vector2(0.95f,0.5f); srt.sizeDelta = new Vector2(0,20);
+            return slider;
+        }
+
+        private UnityEngine.UI.Toggle CreateToggle(Transform parent, string label, Vector2 anchor)
+        {
+            var go = new GameObject($"Toggle_{label}");
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<UnityEngine.UI.Image>(); img.color = new Color(1,1,1,0.1f);
+            var toggle = go.AddComponent<UnityEngine.UI.Toggle>();
+            var rt = img.rectTransform; rt.anchorMin = anchor; rt.anchorMax = anchor; rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(260, 30);
+            var text = CreateText(go.transform, label, 18, new Vector2(0.65f,0.5f)); text.rectTransform.sizeDelta = new Vector2(200, 24);
+            return toggle;
+        }
+
     }
 }
 #endif
