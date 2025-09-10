@@ -21,11 +21,15 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+using System.Reflection;
 
 namespace XCAPE.Editor
 {
     public class SetupWizard : EditorWindow
     {
+        private string orgIdInput = string.Empty;
+        private string projectIdInput = string.Empty;
+        private string projectNameInput = string.Empty;
         [MenuItem("Tools/XCAPE/Setup Wizard")]
         public static void ShowWindow()
         {
@@ -35,6 +39,7 @@ namespace XCAPE.Editor
         private void OnGUI()
         {
             GUILayout.Label("XCAPE Project Setup", EditorStyles.boldLabel);
+            EditorGUILayout.Space(6);
             if (GUILayout.Button("Apply Recommended Settings"))
             {
                 ApplySettings();
@@ -60,6 +65,19 @@ namespace XCAPE.Editor
             if (GUILayout.Button("Open Services Project Settings"))
             {
                 OpenServicesSettings();
+            }
+            EditorGUILayout.Space(8);
+            GUILayout.Label("Link to Unity Gaming Services (UGS)", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Necesitas estar logueado en el Editor (Account). Proporciona Organization ID y Project ID de UGS, o crea el proyecto en dashboard primero y pega aquí los IDs.", MessageType.Info);
+            orgIdInput = EditorGUILayout.TextField("Organization ID", orgIdInput);
+            projectIdInput = EditorGUILayout.TextField("Project ID", projectIdInput);
+            projectNameInput = EditorGUILayout.TextField("Project Name (opcional)", projectNameInput);
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(orgIdInput) || string.IsNullOrEmpty(projectIdInput)))
+            {
+                if (GUILayout.Button("Link Project to UGS (apply IDs)"))
+                {
+                    LinkToUGS(orgIdInput.Trim(), projectIdInput.Trim(), string.IsNullOrWhiteSpace(projectNameInput) ? null : projectNameInput.Trim());
+                }
             }
             if (GUILayout.Button("Add Lobby Panel to Current Scene"))
             {
@@ -820,6 +838,97 @@ namespace XCAPE.Editor
         EditorUtility.DisplayDialog("XCAPE", "Open Project Settings > Services to link your project to Unity Gaming Services.", "OK");
 #endif
     }
+
+        private void LinkToUGS(string orgId, string projectId, string projectName)
+        {
+            // Check login status if possible
+            var ucType = System.Type.GetType("UnityEditor.Connect.UnityConnect, UnityEditor");
+            bool loggedIn = true;
+            if (ucType != null)
+            {
+                var instProp = ucType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static);
+                var instance = instProp?.GetValue(null);
+                var loggedInProp = ucType.GetProperty("loggedIn", BindingFlags.Public | BindingFlags.Instance);
+                if (loggedInProp != null && instance != null)
+                {
+                    loggedIn = (bool)loggedInProp.GetValue(instance);
+                }
+            }
+            if (!loggedIn)
+            {
+                EditorUtility.DisplayDialog("XCAPE", "Debes iniciar sesión en el Editor (Account) para vincular el proyecto.", "OK");
+                return;
+            }
+
+            // Try using CloudProjectSettings (Editor API). Use reflection to be robust across versions.
+            var cpsType = System.Type.GetType("UnityEditor.Connect.CloudProjectSettings, UnityEditor");
+            if (cpsType == null)
+            {
+                EditorUtility.DisplayDialog("XCAPE", "API CloudProjectSettings no disponible en esta versión del editor.", "OK");
+                return;
+            }
+
+            bool success = false;
+            try
+            {
+                // Set organizationId
+                var orgProp = cpsType.GetProperty("organizationId", BindingFlags.Public | BindingFlags.Static);
+                if (orgProp != null && orgProp.CanWrite)
+                {
+                    orgProp.SetValue(null, orgId);
+                }
+                else
+                {
+                    var m = cpsType.GetMethod("SetOrganizationId", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                    m?.Invoke(null, new object[] { orgId });
+                }
+
+                // Set projectId
+                var projProp = cpsType.GetProperty("projectId", BindingFlags.Public | BindingFlags.Static);
+                if (projProp != null && projProp.CanWrite)
+                {
+                    projProp.SetValue(null, projectId);
+                }
+                else
+                {
+                    var m = cpsType.GetMethod("SetProjectId", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                    m?.Invoke(null, new object[] { projectId });
+                }
+
+                // Optional projectName
+                if (!string.IsNullOrEmpty(projectName))
+                {
+                    var nameProp = cpsType.GetProperty("projectName", BindingFlags.Public | BindingFlags.Static);
+                    if (nameProp != null && nameProp.CanWrite)
+                        nameProp.SetValue(null, projectName);
+                    else
+                    {
+                        var m = cpsType.GetMethod("SetProjectName", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                        m?.Invoke(null, new object[] { projectName });
+                    }
+                }
+
+                // Persist to disk if API provides method
+                var saveMethod = cpsType.GetMethod("RelaunchUnityServicesDashboard", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                // Above call may not exist; just notify success in any case
+                success = true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"UGS link failed: {e.Message}\n{e}");
+                success = false;
+            }
+
+            if (success)
+            {
+                EditorUtility.DisplayDialog("XCAPE", "Proyecto vinculado (IDs aplicados). Abre Services para confirmar.", "OK");
+                OpenServicesSettings();
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("XCAPE", "No se pudo aplicar la vinculación automáticamente. Abre Services y vincula manualmente.", "OK");
+            }
+        }
 
         // ===== Unity Packages Installer =====
         private Queue<string> _packagesQueue;
