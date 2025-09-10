@@ -1,0 +1,336 @@
+# Plan de Desarrollo - XCAPE Bowling Game
+project:
+  name: "XCAPE"
+  version: "1.0.0"
+  description: "Juego de boliche 3D realista con física avanzada y multiplayer"
+  type: "Mobile Game (Android/iOS)"
+  
+stack:
+  game_engine:
+    engine: "Unity 2023.3 LTS"
+    language: "C#"
+    physics: "Unity Physics 3D"
+    graphics: "Universal Render Pipeline (URP)"
+    
+  mobile_development:
+    android: "Android API Level 24+ (Android 7.0)"
+    ios: "iOS 12.0+"
+    cross_platform: "Unity Cross-Platform"
+    
+  backend:
+    multiplayer: "Unity Netcode for GameObjects"
+    cloud_save: "Unity Cloud Save"
+    analytics: "Unity Analytics"
+    ads: "Unity Ads + Google AdMob"
+    
+  services:
+    authentication: "Unity Authentication"
+    leaderboards: "Unity Cloud Build"
+    push_notifications: "Firebase Cloud Messaging"
+    crash_reporting: "Unity Cloud Diagnostics"
+    
+  tools:
+    ide: "Unity Editor + VSCode"
+    version_control: "Git + Unity Version Control"
+    asset_store: "Unity Asset Store"
+    3d_modeling: "Blender (assets opcionales)"
+
+environment_setup:
+  unity_installation:
+    version: "Unity 2023.3.40f1 LTS"
+    modules:
+      - "Android Build Support"
+      - "iOS Build Support" 
+      - "Universal Windows Platform"
+      - "Visual Studio Code Editor"
+      - "Unity Version Control"
+    packages:
+      - "Universal Render Pipeline"
+      - "Unity Ads"
+      - "Unity Analytics"
+      - "Unity Authentication"
+      - "Unity Cloud Save"
+      - "Netcode for GameObjects"
+      
+  development_tools:
+    required:
+      - "Unity Hub"
+      - "Visual Studio Code"
+      - "Android Studio (for Android SDK)"
+      - "Xcode (Mac only - for iOS)"
+      - "Git"
+    optional:
+      - "Blender (for custom 3D assets)"
+      - "Audacity (for audio editing)"
+      - "GIMP/Photoshop (for textures)"
+
+structure:
+  Assets/:
+    Scripts/:
+      - Controllers/
+      - Managers/
+      - UI/
+      - Physics/
+      - Audio/
+      - Networking/
+      - Analytics/
+    Scenes/:
+      - MainMenu/
+      - GamePlay/
+      - Settings/
+      - Leaderboards/
+    Prefabs/:
+      - BowlingBall/
+      - Pins/
+      - Lane/
+      - UI_Elements/
+    Materials/:
+      - Ball_Materials/
+      - Lane_Materials/
+      - Pin_Materials/
+    Textures/:
+      - Environments/
+      - UI/
+      - Effects/
+    Audio/:
+      - SFX/
+      - Music/
+      - Voice/
+    Models/:
+      - BowlingLane/
+      - BowlingBall/
+      - Pins/
+      - Environment/
+
+game_features:
+  core_gameplay:
+    - realistic_physics: "Simulación física realista de pelota y pinos"
+    - bowling_scoring: "Sistema de puntuación oficial del boliche"
+    - touch_controls: "Controles táctiles intuitivos para lanzar"
+    - 3d_graphics: "Gráficos 3D de alta calidad"
+    - ball_customization: "Personalización de pelotas (peso, color)"
+    - lane_environments: "Múltiples ambientes de pista"
+    
+  game_modes:
+    - single_player: "Modo un jugador con IA"
+    - local_multiplayer: "Hasta 4 jugadores locales por turnos"
+    - online_multiplayer: "Partidas online en tiempo real"
+    - tournament: "Modo torneo con eliminatorias"
+    - practice: "Modo práctica sin límites"
+    - challenge: "Desafíos diarios especiales"
+    
+  progression_system:
+    - player_levels: "Sistema de niveles y experiencia"
+    - achievements: "Logros desbloqueables"
+    - leaderboards: "Tabla de clasificación global"
+    - statistics: "Estadísticas detalladas del jugador"
+    - unlockables: "Pelotas y pistas desbloqueables"
+    
+  monetization:
+    - banner_ads: "Banners publicitarios AdMob"
+    - rewarded_ads: "Videos recompensados por bonificaciones"
+    - interstitial_ads: "Anuncios intersticiales entre partidas"
+    - iap_cosmetics: "Compras in-app para cosméticos"
+    - premium_upgrade: "Versión premium sin ads"
+
+timeline:
+  phase_1_setup: "1-2 semanas"
+  phase_2_core_gameplay: "4-5 semanas"
+  phase_3_ui_features: "3-4 semanas"
+  phase_4_multiplayer: "3-4 semanas"
+  phase_5_polish_monetization: "2-3 semanas"
+  phase_6_testing_deployment: "2-3 semanas"
+  total_estimate: "15-21 semanas"
+
+detailed_phases:
+  week_1_2:
+    - setup_unity_environment
+    - create_project_structure
+    - import_basic_assets
+    - setup_version_control
+    - create_basic_scene_layout
+    
+  week_3_4:
+    - implement_bowling_physics
+    - create_ball_throwing_mechanics
+    - setup_pin_collision_system
+    - basic_scoring_system
+    - touch_input_controls
+    
+  week_5_6:
+    - refine_physics_parameters
+    - add_ball_spin_mechanics
+    - implement_lane_boundaries
+    - create_pin_reset_system
+    - add_sound_effects
+    
+  week_7_8:
+    - design_main_menu_ui
+    - create_game_hud
+    - implement_settings_menu
+    - add_pause_functionality
+    - create_game_over_screen
+    
+  week_9_10:
+    - implement_single_player_mode
+    - add_local_multiplayer
+    - create_player_progression
+    - implement_achievements_system
+    - add_statistics_tracking
+    
+  week_11_12:
+    - setup_unity_netcode
+    - implement_online_multiplayer
+    - create_matchmaking_system
+    - add_leaderboards
+    - implement_cloud_save
+    
+  week_13_14:
+    - integrate_unity_ads
+    - add_admob_banners
+    - implement_iap_system
+    - create_rewarded_video_ads
+    - add_premium_features
+    
+  week_15_16:
+    - ui_ux_polishing
+    - performance_optimization
+    - add_particle_effects
+    - implement_camera_animations
+    - audio_mixing_mastering
+    
+  week_17_18:
+    - comprehensive_testing
+    - device_compatibility_testing
+    - multiplayer_stress_testing
+    - monetization_testing
+    - bug_fixing
+    
+  week_19_21:
+    - build_optimization
+    - store_assets_preparation
+    - compliance_verification
+    - beta_testing
+    - production_deployment
+
+technical_requirements:
+  minimum_specs:
+    android:
+      os: "Android 7.0 (API level 24)"
+      ram: "3GB"
+      storage: "200MB"
+      gpu: "Adreno 530, Mali-G71 MP8, PowerVR GT7600"
+    ios:
+      os: "iOS 12.0"
+      device: "iPhone 6s or newer"
+      ram: "2GB"
+      storage: "200MB"
+      
+  recommended_specs:
+    android:
+      os: "Android 10.0 (API level 29)"
+      ram: "4GB+"
+      storage: "500MB"
+      gpu: "Adreno 640+, Mali-G76+, PowerVR GM9446"
+    ios:
+      os: "iOS 15.0"
+      device: "iPhone 8 or newer"
+      ram: "3GB+"
+      storage: "500MB"
+
+dependencies:
+  unity_packages:
+    - "com.unity.render-pipelines.universal"
+    - "com.unity.ads"
+    - "com.unity.analytics"
+    - "com.unity.services.authentication"
+    - "com.unity.services.cloudsave"
+    - "com.unity.netcode.gameobjects"
+    - "com.unity.services.relay"
+    - "com.unity.services.lobbies"
+    
+  external_sdks:
+    - "Google Mobile Ads SDK"
+    - "Firebase SDK"
+    - "Unity Cloud Build"
+    - "Unity Version Control"
+
+assets_needed:
+  3d_models:
+    - "Bowling Ball (multiple designs)"
+    - "Bowling Pins (standard 10-pin)"
+    - "Bowling Lane (60 feet regulation)"
+    - "Ball Return Machine"
+    - "Scoring Display"
+    - "Bowling Alley Environment"
+    
+  textures:
+    - "Wood textures (lane, approach)"
+    - "Ball surface materials"
+    - "Pin materials"
+    - "Environment textures"
+    - "UI textures"
+    
+  audio:
+    - "Ball rolling sounds"
+    - "Pin collision sounds"
+    - "Strike/spare sound effects"
+    - "Ambient bowling alley sounds"
+    - "UI interaction sounds"
+    - "Background music tracks"
+
+monetization_strategy:
+  free_to_play:
+    - "Core game completamente gratis"
+    - "Ads no intrusivos"
+    - "Contenido básico desbloqueado"
+    
+  revenue_streams:
+    - "Banner ads (bottom screen)"
+    - "Rewarded videos (extra attempts, bonuses)"
+    - "Interstitial ads (between games)"
+    - "Premium upgrade ($2.99 - no ads)"
+    - "Cosmetic IAPs ($0.99 - $4.99)"
+    - "Power-ups and boosters ($0.99 - $1.99)"
+
+success_metrics:
+  technical:
+    - "60 FPS on target devices"
+    - "< 3 second load times"
+    - "< 1% crash rate"
+    - "< 200MB APK size"
+    
+  engagement:
+    - "Average session: 8+ minutes"
+    - "Day 1 retention: 40%+"
+    - "Day 7 retention: 20%+"
+    - "Daily active users: 1000+"
+    
+  monetization:
+    - "Ad fill rate: 90%+"
+    - "ARPDAU: $0.05+"
+    - "IAP conversion: 2%+"
+    - "Premium upgrade: 5%+"
+
+compliance_requirements:
+  google_play:
+    - "Target API Level 33+ (Android 13)"
+    - "64-bit support mandatory"
+    - "Privacy policy required"
+    - "Content rating: Everyone"
+    - "Ads content policy compliance"
+    
+  apple_app_store:
+    - "iOS 12.0+ support"
+    - "64-bit architecture"
+    - "App Store Review Guidelines"
+    - "Privacy nutrition labels"
+    - "Family-friendly content"
+
+notes:
+  - "Priorizar physics realistas desde el inicio"
+  - "Mantener controles simples e intuitivos"
+  - "Optimizar para dispositivos de gama media"
+  - "Implementar analytics desde el día 1"
+  - "Diseñar para jugabilidad adictiva pero saludable"
+  - "Considerar accesibilidad (daltonismo, motor)"
