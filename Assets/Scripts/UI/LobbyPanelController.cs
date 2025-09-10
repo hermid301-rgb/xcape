@@ -34,6 +34,28 @@ namespace XCAPE.UI
             manager.OnLobbyJoined += _ => RefreshPlayers();
             manager.OnLobbyUpdated += _ => RefreshPlayers();
             manager.OnLobbyLeft += () => ClearPlayers();
+
+            // If the project is not linked to UGS, show a clear warning and disable interactions
+            if (string.IsNullOrEmpty(Application.cloudProjectId))
+            {
+                if (statusText) statusText.text = "UGS no vinculado. Abre Tools > XCAPE > Setup Wizard y vincula el proyecto.";
+                SetInteractable(false);
+            }
+            else
+            {
+                SetInteractable(true);
+            }
+        }
+
+        private void SetInteractable(bool enabled)
+        {
+            if (createButton) createButton.interactable = enabled;
+            if (joinButton) joinButton.interactable = enabled;
+            if (leaveButton) leaveButton.interactable = enabled;
+            if (readyToggle) readyToggle.interactable = enabled;
+            if (startButton) startButton.interactable = enabled && manager != null && manager.IsHost();
+            if (joinCodeField) joinCodeField.interactable = enabled;
+            if (lobbyNameField) lobbyNameField.interactable = enabled;
         }
 
         private void ClearPlayers()

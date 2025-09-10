@@ -40,6 +40,11 @@ namespace XCAPE.Networking
         {
             try
             {
+                if (string.IsNullOrEmpty(Application.cloudProjectId))
+                {
+                    OnError?.Invoke("UGS: Proyecto no vinculado (Application.cloudProjectId vacío). Abre Tools > XCAPE > Setup Wizard > Link to UGS.");
+                    return;
+                }
                 if (UnityServices.State == ServicesInitializationState.Uninitialized)
                 {
                     await UnityServices.InitializeAsync();
