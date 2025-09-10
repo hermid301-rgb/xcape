@@ -47,31 +47,31 @@ namespace XCAPE.Core
 
         public void ShowMainMenu()
         {
-            SetPanel(mainMenuPanel, true);
-            SetPanel(hudPanel, false);
-            SetPanel(pausePanel, false);
-            SetPanel(gameOverPanel, false);
-            SetPanel(settingsPanel, false);
+            Show(mainMenuPanel);
+            Hide(hudPanel);
+            Hide(pausePanel);
+            Hide(gameOverPanel);
+            Hide(settingsPanel);
         }
 
         public void ShowHUD()
         {
-            SetPanel(mainMenuPanel, false);
-            SetPanel(hudPanel, true);
-            SetPanel(pausePanel, false);
-            SetPanel(gameOverPanel, false);
+            Hide(mainMenuPanel);
+            Show(hudPanel);
+            Hide(pausePanel);
+            Hide(gameOverPanel);
             // settingsPanel permanece bajo control del usuario
         }
 
         public void ShowPauseMenu()
         {
-            SetPanel(pausePanel, true);
+            Show(pausePanel);
         }
 
         public void ShowGameOver()
         {
-            SetPanel(gameOverPanel, true);
-            SetPanel(hudPanel, false);
+            Show(gameOverPanel);
+            Hide(hudPanel);
         }
 
         private void OnGameStateChanged(GameManager.GameState state)
@@ -93,9 +93,14 @@ namespace XCAPE.Core
             }
         }
 
-        private void SetPanel(GameObject panel, bool enable)
+        private void Show(GameObject panel) => Transition(panel, true);
+        private void Hide(GameObject panel) => Transition(panel, false);
+
+        private void Transition(GameObject panel, bool show)
         {
-            if (panel) panel.SetActive(enable);
+            if (!panel) return;
+            var t = panel.GetComponent<XCAPE.UI.PanelTransition>() ?? panel.AddComponent<XCAPE.UI.PanelTransition>();
+            if (show) t.Show(); else t.Hide();
         }
     }
 }

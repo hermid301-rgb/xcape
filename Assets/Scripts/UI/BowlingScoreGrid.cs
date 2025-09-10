@@ -9,7 +9,12 @@ namespace XCAPE.UI
     {
         [Header("Grid")]
         [SerializeField] private GridLayoutGroup grid;
-        [SerializeField] private GameObject cellPrefab; // simple Text cell
+    [SerializeField] private GameObject cellPrefab; // simple Text cell
+    [Header("Style")]
+    [SerializeField] private Color frameBg = new Color(1,1,1,0.05f);
+    [SerializeField] private Color borderColor = new Color(1,1,1,0.25f);
+    [SerializeField] private Color strikeColor = new Color(0.2f,1f,0.2f,1f);
+    [SerializeField] private Color spareColor = new Color(0.2f,0.8f,1f,1f);
 
         private readonly List<Text> rollCells = new(); // 21 cells (2*9 + 3)
         private readonly List<Text> frameTotals = new(); // 10 cells
@@ -50,10 +55,14 @@ namespace XCAPE.UI
                 int rollsInFrame = (frame == 10) ? 3 : 2;
                 for (int r = 0; r < rollsInFrame; r++)
                 {
-                    rollCells.Add(InstantiateCell($"F{frame}R{r+1}"));
+                    var c = InstantiateCell($"F{frame}R{r+1}");
+                    c.GetComponentInParent<Image>().color = frameBg;
+                    rollCells.Add(c);
                 }
                 // Total cell
-                frameTotals.Add(InstantiateCell($"F{frame}T"));
+                var totalCell = InstantiateCell($"F{frame}T");
+                totalCell.GetComponentInParent<Image>().color = frameBg * 1.2f;
+                frameTotals.Add(totalCell);
                 // Spacer
                 InstantiateCell("Spacer").text = "";
             }
@@ -68,13 +77,19 @@ namespace XCAPE.UI
 
         private GameObject CreateDefaultCellPrefab()
         {
+            var root = new GameObject("CellRoot");
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(1,1,1,0.08f);
             var go = new GameObject("Cell");
-            var img = go.AddComponent<Image>();
-            img.color = new Color(1,1,1,0.08f);
+            go.transform.SetParent(root.transform, false);
             var text = go.AddComponent<Text>();
             text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             text.color = Color.white; text.alignment = TextAnchor.MiddleCenter; text.fontSize = 14;
-            return go;
+            // Border (thin outline)
+            var border = new GameObject("Border"); border.transform.SetParent(root.transform, false);
+            var bi = border.AddComponent<Image>(); bi.color = borderColor;
+            var rt = bi.rectTransform; rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = new Vector2(-1,-1); rt.offsetMax = new Vector2(1,1);
+            return root;
         }
 
         void OnEnable() => Refresh();
@@ -98,7 +113,8 @@ namespace XCAPE.UI
                     {
                         if (rolls[rollIdx] == 10)
                         {
-                            rollCells[cellIdx++].text = "X"; // strike
+                            var t = rollCells[cellIdx++];
+                            t.text = "X"; t.color = strikeColor;
                             rollCells[cellIdx++].text = "";
                             frameTotals[frame - 1].text = score.GetFrameScore(frame).ToString();
                             rollIdx += 1;
@@ -108,7 +124,8 @@ namespace XCAPE.UI
                             int a = rolls[rollIdx];
                             int b = (rollIdx + 1) < rolls.Count ? rolls[rollIdx + 1] : -1;
                             rollCells[cellIdx++].text = a.ToString();
-                            rollCells[cellIdx++].text = (b >= 0) ? ((a + b == 10) ? "/" : b.ToString()) : "";
+                            var t = rollCells[cellIdx++];
+                            if (b >= 0 && a + b == 10) { t.text = "/"; t.color = spareColor; } else { t.text = (b >= 0) ? b.ToString() : ""; t.color = Color.white; }
                             frameTotals[frame - 1].text = score.GetFrameScore(frame).ToString();
                             rollIdx += 2;
                         }
@@ -126,13 +143,13 @@ namespace XCAPE.UI
                     {
                         if (rollIdx >= rolls.Count) { cellIdx++; continue; }
                         int val = rolls[rollIdx++];
-                        if (val == 10) rollCells[cellIdx].text = "X";
+            if (val == 10) { rollCells[cellIdx].text = "X"; rollCells[cellIdx].color = strikeColor; }
                         else
                         {
                             // Check spare: needs previous in frame 10 context
                             if (r == 1 && rollCells[cellIdx - 1].text != "X" &&
                                 int.TryParse(rollCells[cellIdx - 1].text, out var prev) && prev + val == 10)
-                                rollCells[cellIdx].text = "/";
+                { rollCells[cellIdx].text = "/"; rollCells[cellIdx].color = spareColor; }
                             else rollCells[cellIdx].text = val.ToString();
                         }
                         cellIdx++;
