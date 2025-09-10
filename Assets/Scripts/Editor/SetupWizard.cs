@@ -4,6 +4,10 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+#if UNITY_RENDER_PIPELINE_UNIVERSAL
+using UnityEngine.Rendering.Universal;
+#endif
 
 namespace XCAPE.Editor
 {
@@ -39,6 +43,8 @@ namespace XCAPE.Editor
             PlayerSettings.companyName = "XCapeStudio";
             PlayerSettings.productName = "XCAPE Bowling";
             PlayerSettings.bundleVersion = "1.0.0";
+            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Android, ApiCompatibilityLevel.NET_Unity_4_8);
+            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.iOS, ApiCompatibilityLevel.NET_Unity_4_8);
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.iOS, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
@@ -48,12 +54,33 @@ namespace XCAPE.Editor
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.allowedAutorotateToPortrait = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 });
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, true);
+            PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
+            PlayerSettings.SetMobileMTRendering(BuildTargetGroup.iOS, true);
+            PlayerSettings.SetPropertyInt("ScriptingBackend", (int)ScriptingImplementation.IL2CPP, BuildTargetGroup.Android);
+            PlayerSettings.SetPropertyInt("ScriptingBackend", (int)ScriptingImplementation.IL2CPP, BuildTargetGroup.iOS);
+            PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
+            PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.iOS, Il2CppCompilerConfiguration.Release);
+            PlayerSettings.SetIncrementalIl2CppBuild(BuildTargetGroup.Android, true);
+            PlayerSettings.SetIncrementalIl2CppBuild(BuildTargetGroup.iOS, true);
+            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Medium);
+            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.iOS, ManagedStrippingLevel.Medium);
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
 
             var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android);
             if (!defines.Contains("ADMOB_ENABLED")) defines += ";ADMOB_ENABLED";
             if (!defines.Contains("XCAPE_MOBILE")) defines += ";XCAPE_MOBILE";
             PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, defines);
             PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.iOS, defines);
+
+            // Enable new Input System
+            PlayerSettings.SetPropertyInt("ActiveInputHandler", 1, BuildTargetGroup.Android);
+            PlayerSettings.SetPropertyInt("ActiveInputHandler", 1, BuildTargetGroup.iOS);
+
+            // Setup URP if available
+            SetupURP();
 
             EditorUtility.DisplayDialog("XCAPE", "Recommended settings applied.", "OK");
         }
@@ -98,6 +125,29 @@ namespace XCAPE.Editor
             AddScene("Assets/Scenes/GamePlay/GamePlay.unity");
             EditorBuildSettings.scenes = scenes.ToArray();
             EditorUtility.DisplayDialog("XCAPE", "Build Settings updated with default scenes.", "OK");
+        }
+
+        private void SetupURP()
+        {
+#if UNITY_RENDER_PIPELINE_UNIVERSAL
+            var settingsPath = "Assets/Settings";
+            if (!Directory.Exists(settingsPath)) Directory.CreateDirectory(settingsPath);
+            var rpAssetPath = Path.Combine(settingsPath, "XCAPE_URP_Asset.asset");
+            UniversalRenderPipelineAsset urp = null;
+            if (File.Exists(rpAssetPath))
+            {
+                urp = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(rpAssetPath);
+            }
+            if (urp == null)
+            {
+                urp = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
+                AssetDatabase.CreateAsset(urp, rpAssetPath);
+                AssetDatabase.SaveAssets();
+            }
+            GraphicsSettings.renderPipelineAsset = urp;
+#else
+            Debug.LogWarning("URP package not detected at compile time. Ensure com.unity.render-pipelines.universal is installed.");
+#endif
         }
 
         private static GameObject CreateOrFindObject(string name, System.Type type)
