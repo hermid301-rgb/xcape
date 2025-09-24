@@ -1,6 +1,6 @@
 #if UNITY_EDITOR
 using UnityEditor;
-using UnityEditor.SceneManagement;
+// using UnityEditor.SceneManagement; // Duplicado eliminado
 using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
@@ -367,7 +367,7 @@ namespace XCAPE.Editor
             EditorUtility.DisplayDialog("XCAPE", "Gameplay Scene (wired) creada y guardada.", "OK");
         }
 
-        private GameObject CreatePinPrefab((PhysicMaterial ball, PhysicMaterial lane, PhysicMaterial gutter, PhysicMaterial pin) pm)
+        private GameObject CreatePinPrefab((PhysicsMaterial ball, PhysicsMaterial lane, PhysicsMaterial gutter, PhysicsMaterial pin) pm)
         {
             Directory.CreateDirectory("Assets/Prefabs/Gameplay");
             var go = new GameObject("Pin");
@@ -389,7 +389,7 @@ namespace XCAPE.Editor
             return prefab;
         }
 
-        private GameObject CreateBallPrefab((PhysicMaterial ball, PhysicMaterial lane, PhysicMaterial gutter, PhysicMaterial pin) pm)
+        private GameObject CreateBallPrefab((PhysicsMaterial ball, PhysicsMaterial lane, PhysicsMaterial gutter, PhysicsMaterial pin) pm)
         {
             Directory.CreateDirectory("Assets/Prefabs/Gameplay");
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -399,7 +399,7 @@ namespace XCAPE.Editor
             var aud = go.AddComponent<AudioSource>();
             var bc = go.AddComponent<XCAPE.Gameplay.BallController>();
             go.tag = "Ball";
-            rb.mass = 7.26f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous; rb.drag = 0.1f; rb.angularDrag = 2f;
+            rb.mass = 7.26f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous; rb.linearDamping = 0.1f; rb.angularDamping = 2f;
             sc.radius = 0.108f;
             sc.material = pm.ball;
             // Netcode components (if available)
@@ -543,18 +543,18 @@ namespace XCAPE.Editor
         }
 
         // ===== Physic Materials Creation & Application =====
-        private (PhysicMaterial ball, PhysicMaterial lane, PhysicMaterial gutter, PhysicMaterial pin) EnsurePhysicMaterials()
+        private (PhysicsMaterial ball, PhysicsMaterial lane, PhysicsMaterial gutter, PhysicsMaterial pin) EnsurePhysicMaterials()
         {
             var dir = "Assets/Physics/PhysicMaterials";
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            PhysicMaterial LoadOrCreate(string name, System.Action<PhysicMaterial> configure)
+            PhysicsMaterial LoadOrCreate(string name, System.Action<PhysicsMaterial> configure)
             {
                 var path = Path.Combine(dir, name + ".physicMaterial").Replace("\\", "/");
-                var mat = AssetDatabase.LoadAssetAtPath<PhysicMaterial>(path);
+                var mat = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
                 if (mat == null)
                 {
-                    mat = new PhysicMaterial(name);
+                    mat = new PhysicsMaterial(name);
                     configure?.Invoke(mat);
                     AssetDatabase.CreateAsset(mat, path);
                     AssetDatabase.SaveAssets();
@@ -572,8 +572,8 @@ namespace XCAPE.Editor
                 m.dynamicFriction = 0.2f;
                 m.staticFriction = 0.25f;
                 m.bounciness = 0.02f;
-                m.frictionCombine = PhysicMaterialCombine.Average;
-                m.bounceCombine = PhysicMaterialCombine.Minimum;
+                m.frictionCombine = PhysicsMaterialCombine.Average;
+                m.bounceCombine = PhysicsMaterialCombine.Minimum;
             });
 
             var lane = LoadOrCreate("Lane", m =>
@@ -581,8 +581,8 @@ namespace XCAPE.Editor
                 m.dynamicFriction = 0.01f;
                 m.staticFriction = 0.02f;
                 m.bounciness = 0.0f;
-                m.frictionCombine = PhysicMaterialCombine.Minimum; // forzar baja fricción
-                m.bounceCombine = PhysicMaterialCombine.Minimum;
+                m.frictionCombine = PhysicsMaterialCombine.Minimum; // forzar baja fricción
+                m.bounceCombine = PhysicsMaterialCombine.Minimum;
             });
 
             var gutter = LoadOrCreate("Gutter", m =>
@@ -590,8 +590,8 @@ namespace XCAPE.Editor
                 m.dynamicFriction = 0.8f;
                 m.staticFriction = 0.9f;
                 m.bounciness = 0.05f;
-                m.frictionCombine = PhysicMaterialCombine.Maximum; // fricción alta
-                m.bounceCombine = PhysicMaterialCombine.Minimum;
+                m.frictionCombine = PhysicsMaterialCombine.Maximum; // fricción alta
+                m.bounceCombine = PhysicsMaterialCombine.Minimum;
             });
 
             var pin = LoadOrCreate("Pin", m =>
@@ -599,8 +599,8 @@ namespace XCAPE.Editor
                 m.dynamicFriction = 0.4f;
                 m.staticFriction = 0.6f;
                 m.bounciness = 0.1f;
-                m.frictionCombine = PhysicMaterialCombine.Average;
-                m.bounceCombine = PhysicMaterialCombine.Minimum;
+                m.frictionCombine = PhysicsMaterialCombine.Average;
+                m.bounceCombine = PhysicsMaterialCombine.Minimum;
             });
 
             return (ball, lane, gutter, pin);
@@ -621,7 +621,7 @@ namespace XCAPE.Editor
                     var rb = go.GetComponent<Rigidbody>();
                     if (rb)
                     {
-                        rb.mass = 7.26f; rb.drag = 0.1f; rb.angularDrag = 2f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                        rb.mass = 7.26f; rb.linearDamping = 0.1f; rb.angularDamping = 2f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
                         rb.maxAngularVelocity = 50f;
                     }
                 }
@@ -631,7 +631,7 @@ namespace XCAPE.Editor
                     var rb = go.GetComponent<Rigidbody>();
                     if (rb)
                     {
-                        rb.mass = 1.59f; rb.drag = 0.5f; rb.angularDrag = 3f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                        rb.mass = 1.59f; rb.linearDamping = 0.5f; rb.angularDamping = 3f; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
                     }
                 }
                 else if (go.CompareTag("Lane"))

@@ -17,7 +17,7 @@ namespace XCAPE.Core
         void LateUpdate()
         {
             if (!target) return;
-            var vel = target.GetComponent<Rigidbody>()?.velocity ?? Vector3.zero;
+            var vel = target.GetComponent<Rigidbody>()?.linearVelocity ?? Vector3.zero;
             var lookAhead = vel * lookAheadFactor;
             var targetPos = target.transform.position + offset + new Vector3(lookAhead.x, 0, lookAhead.z);
             transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * followSmooth);

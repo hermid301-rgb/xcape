@@ -3,8 +3,6 @@ name: XCAPE Bowling CI/CD
 on:
   push:
     branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master ]
 
 env:
   UNITY_VERSION: 2023.3.40f1
@@ -13,6 +11,11 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,10 +34,6 @@ jobs:
 
       - name: Run Unity Tests
         uses: game-ci/unity-test-runner@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: EditMode
@@ -52,6 +51,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
+      UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
+      UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -70,13 +76,6 @@ jobs:
 
       - name: Build Android
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
-          UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
-          UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
@@ -94,6 +93,13 @@ jobs:
     runs-on: macos-latest
     needs: test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
+      UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
+      UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -112,13 +118,6 @@ jobs:
 
       - name: Build iOS
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UGS_ORG_ID: ${{ secrets.UGS_ORG_ID }}
-          UGS_PROJECT_ID: ${{ secrets.UGS_PROJECT_ID }}
-          UGS_PROJECT_NAME: ${{ secrets.UGS_PROJECT_NAME }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: iOS

@@ -26,8 +26,8 @@ namespace XCAPE.Gameplay
         [SerializeField] private float laneRollingFriction = 0.02f;
         [SerializeField] private float approachFriction = 0.3f;
         [SerializeField] private float gutterFriction = 0.8f;
-        [SerializeField] private PhysicMaterial ballPhysicMaterial;
-        [SerializeField] private PhysicMaterial lanePhysicMaterial;
+        [SerializeField] private PhysicsMaterial ballPhysicMaterial;
+        [SerializeField] private PhysicsMaterial lanePhysicMaterial;
         
         [Header("Touch Controls")]
         [SerializeField] private float touchSensitivity = 2f;
@@ -123,13 +123,13 @@ namespace XCAPE.Gameplay
             
             if (!ballPhysicMaterial)
             {
-                ballPhysicMaterial = new PhysicMaterial("BallMaterial")
+                ballPhysicMaterial = new PhysicsMaterial("BallMaterial")
                 {
                     dynamicFriction = 0.3f,
                     staticFriction = 0.4f,
                     bounciness = 0.2f,
-                    frictionCombine = PhysicMaterialCombine.Average,
-                    bounceCombine = PhysicMaterialCombine.Average
+                    frictionCombine = PhysicsMaterialCombine.Average,
+                    bounceCombine = PhysicsMaterialCombine.Average
                 };
             }
         }
@@ -137,8 +137,8 @@ namespace XCAPE.Gameplay
         private void SetupPhysics()
         {
             _rb.mass = ballMass;
-            _rb.drag = 0.1f;
-            _rb.angularDrag = 2f;
+            _rb.linearDamping = 0.1f;
+            _rb.angularDamping = 2f;
             _rb.maxAngularVelocity = 50f;
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
             _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -262,7 +262,7 @@ namespace XCAPE.Gameplay
             Vector3 launchVelocity = _launchDirection * launchSpeed;
             
             // Aplicar fuerza de lanzamiento
-            _rb.velocity = launchVelocity;
+            _rb.linearVelocity = launchVelocity;
             
             // Aplicar spin
             Vector3 spinTorque = new Vector3(0, _currentSpin * spinMultiplier, 0);
@@ -291,7 +291,7 @@ namespace XCAPE.Gameplay
         #region Physics Updates
         private void UpdatePhysics()
         {
-            _currentSpeed = _rb.velocity.magnitude;
+            _currentSpeed = _rb.linearVelocity.magnitude;
             
             // Aplicar fricción personalizada basada en superficie
             if (_isOnLane && !_isInGutter)
@@ -309,9 +309,9 @@ namespace XCAPE.Gameplay
             if (!_isLaunched) return;
             
             // Simular resistencia del aire
-            if (_rb.velocity.magnitude > 0.1f)
+            if (_rb.linearVelocity.magnitude > 0.1f)
             {
-                Vector3 airResistance = -_rb.velocity.normalized * (_rb.velocity.sqrMagnitude * 0.001f);
+                Vector3 airResistance = -_rb.linearVelocity.normalized * (_rb.linearVelocity.sqrMagnitude * 0.001f);
                 _rb.AddForce(airResistance, ForceMode.Force);
             }
             
@@ -325,18 +325,18 @@ namespace XCAPE.Gameplay
 
         private void ApplyLaneFriction()
         {
-            if (_rb.velocity.magnitude > 0.1f)
+            if (_rb.linearVelocity.magnitude > 0.1f)
             {
-                Vector3 frictionForce = -_rb.velocity.normalized * (laneRollingFriction * _rb.mass * 9.81f);
+                Vector3 frictionForce = -_rb.linearVelocity.normalized * (laneRollingFriction * _rb.mass * 9.81f);
                 _rb.AddForce(frictionForce, ForceMode.Force);
             }
         }
 
         private void ApplyGutterFriction()
         {
-            if (_rb.velocity.magnitude > 0.1f)
+            if (_rb.linearVelocity.magnitude > 0.1f)
             {
-                Vector3 frictionForce = -_rb.velocity.normalized * (gutterFriction * _rb.mass * 9.81f);
+                Vector3 frictionForce = -_rb.linearVelocity.normalized * (gutterFriction * _rb.mass * 9.81f);
                 _rb.AddForce(frictionForce, ForceMode.Force);
             }
         }
@@ -401,7 +401,7 @@ namespace XCAPE.Gameplay
         private void CheckBallState()
         {
             // Verificar si la bola se ha detenido
-            if (_isLaunched && _currentSpeed < 0.5f && _rb.velocity.magnitude < 0.1f)
+            if (_isLaunched && _currentSpeed < 0.5f && _rb.linearVelocity.magnitude < 0.1f)
             {
                 StartCoroutine(CheckForStop());
             }
@@ -411,7 +411,7 @@ namespace XCAPE.Gameplay
         {
             yield return new WaitForSeconds(1f);
             
-            if (_rb.velocity.magnitude < 0.1f)
+            if (_rb.linearVelocity.magnitude < 0.1f)
             {
                 StopBall();
             }
@@ -419,7 +419,7 @@ namespace XCAPE.Gameplay
 
         private void StopBall()
         {
-            _rb.velocity = Vector3.zero;
+            _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
             
             if (ballTrail) ballTrail.enabled = false;
@@ -479,15 +479,15 @@ namespace XCAPE.Gameplay
             var pinController = collision.gameObject.GetComponent<PinController>();
             if (pinController)
             {
-                pinController.OnHitByBall(_rb.velocity.magnitude);
+                pinController.OnHitByBall(_rb.linearVelocity.magnitude);
             }
         }
 
         private void HandleGutterBounce(Collision collision)
         {
             // Aplicar rebote suave en gutter
-            Vector3 bounceDirection = Vector3.Reflect(_rb.velocity.normalized, collision.contacts[0].normal);
-            _rb.velocity = bounceDirection * Mathf.Min(_rb.velocity.magnitude, gutterBounceForce);
+            Vector3 bounceDirection = Vector3.Reflect(_rb.linearVelocity.normalized, collision.contacts[0].normal);
+            _rb.linearVelocity = bounceDirection * Mathf.Min(_rb.linearVelocity.magnitude, gutterBounceForce);
         }
         #endregion
 
@@ -505,7 +505,7 @@ namespace XCAPE.Gameplay
             _currentSpin = 0f;
             _currentSpeed = 0f;
             
-            _rb.velocity = Vector3.zero;
+            _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
             transform.SetPositionAndRotation(_startPosition, _startRotation);
             

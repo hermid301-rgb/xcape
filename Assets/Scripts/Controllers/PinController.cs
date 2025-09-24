@@ -22,7 +22,7 @@ namespace XCAPE.Gameplay
         [Header("Pin Dimensions")]
         [SerializeField] private float pinHeight = 0.381f; // Altura oficial (15 pulgadas)
         [SerializeField] private float pinRadius = 0.06f; // Radio en la parte más ancha
-        [SerializeField] private PhysicMaterial pinPhysicMaterial;
+        [SerializeField] private PhysicsMaterial pinPhysicMaterial;
         
         [Header("Visual States")]
         [SerializeField] private Material standingMaterial;
@@ -110,13 +110,13 @@ namespace XCAPE.Gameplay
             // Crear material físico si no existe
             if (!pinPhysicMaterial)
             {
-                pinPhysicMaterial = new PhysicMaterial("PinMaterial")
+                pinPhysicMaterial = new PhysicsMaterial("PinMaterial")
                 {
                     dynamicFriction = 0.4f,
                     staticFriction = 0.6f,
                     bounciness = 0.1f,
-                    frictionCombine = PhysicMaterialCombine.Average,
-                    bounceCombine = PhysicMaterialCombine.Minimum
+                    frictionCombine = PhysicsMaterialCombine.Average,
+                    bounceCombine = PhysicsMaterialCombine.Minimum
                 };
             }
         }
@@ -125,8 +125,8 @@ namespace XCAPE.Gameplay
         {
             // Configurar Rigidbody con valores realistas
             _rb.mass = pinMass;
-            _rb.drag = 0.5f;
-            _rb.angularDrag = 3f;
+            _rb.linearDamping = 0.5f;
+            _rb.angularDamping = 3f;
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
             _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
             
@@ -190,7 +190,7 @@ namespace XCAPE.Gameplay
         private void UpdateSettlement()
         {
             // Verificar si el pino está en movimiento
-            bool isMoving = _rb.velocity.magnitude > 0.1f || _rb.angularVelocity.magnitude > 0.1f;
+            bool isMoving = _rb.linearVelocity.magnitude > 0.1f || _rb.angularVelocity.magnitude > 0.1f;
             
             if (isMoving)
             {
@@ -231,7 +231,7 @@ namespace XCAPE.Gameplay
         {
             if (!HasServerAuthority()) return;
             // Aplicar estabilización cuando está de pie
-            if (!_isKnockedDown && _rb.velocity.magnitude < 0.5f)
+            if (!_isKnockedDown && _rb.linearVelocity.magnitude < 0.5f)
             {
                 // Pequeña fuerza correctiva hacia la posición vertical
                 Vector3 uprightTorque = Vector3.Cross(transform.up, Vector3.up) * 10f;
@@ -384,7 +384,7 @@ namespace XCAPE.Gameplay
         {
             if (!HasServerAuthority()) return;
             // Resetear estado físico
-            _rb.velocity = Vector3.zero;
+            _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
             transform.SetPositionAndRotation(_originalPosition, _originalRotation);
             
